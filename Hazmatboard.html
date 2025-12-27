@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Hazmat Research Board</title>
+    <style>
+        :root {
+            --board-bg: #dbe2e6;
+            --header-bar-bg: #5f6a73;
+            --border-color: #333;
+            --text-red: #cc0000;
+            --text-blue: #0044cc;
+            --input-bg: #ffffff;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background-color: #333; /* Dark background for screen view */
+            padding: 20px;
+            margin: 0;
+            /* Fix for small screens: Use block display with margin auto instead of flex center */
+            /* This prevents the left side from being cut off on mobile/tablets */
+            display: block;
+            overflow-x: auto; 
+            min-width: fit-content; /* Ensures background covers full scroll width */
+        }
+
+        /* Main Board Container */
+        .board-container {
+            width: 1100px; /* Fixed width to maintain board layout */
+            background-color: var(--board-bg);
+            border: 4px solid #222;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            color: #000;
+            position: relative;
+            margin: 0 auto; /* Centers the board horizontally */
+        }
+
+        /* Typography & Utilities */
+        .txt-red { color: var(--text-red); font-weight: bold; }
+        .txt-blue { color: var(--text-blue); font-weight: bold; }
+        
+        .section-bar { 
+            background-color: var(--header-bar-bg); 
+            color: white; 
+            padding: 2px 5px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            font-size: 14px;
+            margin-bottom: 5px;
+            border-radius: 2px;
+            /* Ensure background prints */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .fillable {
+            background-color: var(--input-bg);
+            border: 1px solid #444;
+            padding: 2px 5px;
+            font-family: monospace;
+            font-size: 15px;
+            color: #000;
+            font-weight: 600; /* Bolder text for visibility */
+        }
+        input.fillable { height: 22px; width: 100%; box-sizing: border-box;}
+        input.fillable:focus { background-color: #fffacd; outline: 2px solid #555; }
+
+        /* Header Section */
+        .header {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #555;
+            padding-bottom: 10px;
+            align-items: center;
+        }
+
+        /* CSS Only NFPA Diamond */
+        .nfpa-diamond {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-right: 20px;
+            transform: rotate(45deg);
+            border: 1px solid #000;
+            flex-shrink: 0;
+            margin-left: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .nfpa-quad {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            border: 1px solid rgba(0,0,0,0.2);
+            -webkit-print-color-adjust: exact; /* Force color print */
+            print-color-adjust: exact;
+        }
+        .nfpa-blue { background-color: #4da6ff; left: 0; top: 0; }
+        .nfpa-red { background-color: #ff4d4d; left: 40px; top: 0; }
+        .nfpa-yellow { background-color: #ffff4d; left: 40px; top: 40px; }
+        .nfpa-white { background-color: #ffffff; left: 0; top: 40px; }
+        .nfpa-quad span { transform: rotate(-45deg); display:block; }
+
+        .title-block {
+            text-align: center;
+            flex-grow: 1;
+        }
+        .title-block h1 { margin: 0; font-size: 26px; text-transform: uppercase; color: #222; }
+        .title-block h2 { margin: 5px 0 0 0; font-size: 22px; text-transform: uppercase; color: #444; }
+
+        /* Layout Grids */
+        .input-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .input-row label {
+            flex: 0 0 140px;
+            font-weight: bold;
+            font-size: 13px;
+            text-align: right;
+            padding-right: 10px;
+            white-space: nowrap;
+        }
+
+        .top-ident-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            background: #cbd3d8;
+            padding: 10px;
+            border-radius: 5px;
+            -webkit-print-color-adjust: exact;
+        }
+        .top-ident-grid .input-row label { flex: 0 0 120px; }
+
+        .middle-section-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1.4fr 1.1fr;
+            column-gap: 20px;
+            margin-bottom: 15px;
+            align-items: start;
+        }
+
+        .meters-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            margin-bottom: 10px;
+            background-color: #999;
+            border: 1px solid #444;
+        }
+        .meters-cell { border: none; height: 24px; }
+
+        .product-info-wrapper {
+            background-color: #cbd3d8;
+            padding: 10px;
+            border-radius: 5px;
+            -webkit-print-color-adjust: exact;
+        }
+        .bottom-info-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1.5fr 1fr;
+            column-gap: 20px;
+            margin-top: 5px;
+            align-items: start;
+        }
+        .bottom-info-grid .input-row label { flex-basis: 180px; }
+
+        /* Footer & Buttons */
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            align-items: end;
+        }
+        .notes-section textarea {
+            width: 100%;
+            height: 80px;
+            resize: none;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 100%;
+            height: 40px;
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .reset-btn { background-color: #d92525; }
+        .reset-btn:hover { background-color: #b01e1e; }
+        
+        .print-btn { background-color: #28a745; }
+        .print-btn:hover { background-color: #1e7e34; }
+
+        /* PRINT STYLES - Crucial for 1 page layout */
+        @media print {
+            @page {
+                size: landscape; /* Force landscape to fit width */
+                margin: 0.5cm;
+            }
+            body {
+                background-color: white;
+                padding: 0;
+                display: block;
+                overflow: visible;
+                min-width: 0;
+            }
+            .board-container {
+                width: 100%;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                border-radius: 0;
+                margin: 0;
+            }
+            /* Hide buttons during print */
+            .button-group {
+                display: none;
+            }
+            /* Ensure inputs show their values clearly */
+            input, textarea {
+                border: 1px solid #ccc;
+            }
+            /* Adjust notes height for print */
+            .notes-section textarea {
+                height: 60px;
+            }
+            /* Remove shadows from diamond for clean print */
+            .nfpa-diamond { box-shadow: none; }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="board-container" id="hazmatBoard">
+
+    <div class="header">
+        <div class="nfpa-diamond">
+            <div class="nfpa-quad nfpa-blue"><span>H</span></div>
+            <div class="nfpa-quad nfpa-red"><span>F</span></div>
+            <div class="nfpa-quad nfpa-yellow"><span>R</span></div>
+            <div class="nfpa-quad nfpa-white"><span>S</span></div>
+        </div>
+
+        <div class="title-block">
+            <h1>Pinellas County Hazardous Materials Response Team</h1>
+            <h2>Research Board</h2>
+        </div>
+    </div>
+
+    <div class="top-ident-grid">
+        <div>
+            <div class="input-row"><label>CHEMICAL NAME</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>UN or CAS #</label><input type="text" class="fillable"></div>
+        </div>
+        <div>
+            <div class="input-row"><label>FORMULA</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>DOT</label><input type="text" class="fillable"></div>
+        </div>
+    </div>
+
+    <div class="middle-section-grid">
+
+        <div class="mid-col-1">
+            <div class="section-bar">PHYSICAL STATE</div>
+            <div class="input-row"><label style="text-align:left;">SOLID/LIQUID/GAS</label><input type="text" class="fillable"></div>
+            
+            <div class="section-bar" style="margin-top: 15px;">FLAMMABILITY</div>
+            <div class="input-row"><label>LEL</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>UEL</label><input type="text" class="fillable"></div>
+
+            <div class="section-bar" style="margin-top: 15px;">TOXICITY</div>
+            <div class="input-row"><label>IDLH</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>TWA</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>REL</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>PEL</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>TLV</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>STEL</label><input type="text" class="fillable"></div>
+        </div>
+
+        <div class="mid-col-2">
+            <div class="input-row" style="margin-bottom: 20px; background: #fff; padding: 5px; border: 1px solid #ccc;">
+                <label style="flex: 1; text-align: center;">
+                    <span class="txt-red" style="font-size:16px;">ACID</span> or <span class="txt-blue" style="font-size:16px;">BASE</span>
+                </label>
+                <input type="text" class="fillable" style="flex: 0 0 50%;">
+            </div>
+
+            <div class="input-row"><label>RADIATION</label><input type="text" class="fillable"></div>
+            <div class="input-row" style="margin-top: 15px;"><label>EXPLOSIVE</label><input type="text" class="fillable"></div>
+            <div class="input-row" style="margin-top: 15px;"><label>POLYMERIZE</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label>FLUORINE</label><input type="text" class="fillable"></div>
+            
+            <div class="section-bar" style="margin-top: 20px;">INCOMPATIBILITIES / REACTIVITY</div>
+            <div class="input-row">
+                <input type="text" class="fillable" style="height: 30px;">
+            </div>
+        </div>
+
+        <div class="mid-col-3">
+            <div class="section-bar" style="text-align: center;">METERS / PAPERS</div>
+            <div class="meters-grid-container">
+                <input type="text" class="fillable meters-cell"><input type="text" class="fillable meters-cell">
+                <input type="text" class="fillable meters-cell"><input type="text" class="fillable meters-cell">
+                <input type="text" class="fillable meters-cell"><input type="text" class="fillable meters-cell">
+                <input type="text" class="fillable meters-cell"><input type="text" class="fillable meters-cell">
+                <input type="text" class="fillable meters-cell"><input type="text" class="fillable meters-cell">
+            </div>
+
+            <div class="section-bar" style="margin-top: 15px;">ISOLATION DISTANCE</div>
+            <div class="input-row"><label style="flex-basis: 70px;">DAY</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label style="flex-basis: 70px;">NIGHT</label><input type="text" class="fillable"></div>
+
+            <div class="section-bar" style="margin-top: 15px;">PPE</div>
+            <div class="input-row"><label style="flex-basis: 80px;">RECON</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label style="flex-basis: 80px;">ENTRY</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label style="flex-basis: 80px;">DECON</label><input type="text" class="fillable"></div>
+            <div class="input-row"><label style="flex-basis: 80px;">MEDICAL</label><input type="text" class="fillable"></div>
+        </div>
+    </div>
+
+    <div class="product-info-wrapper">
+        <div class="section-bar">PRODUCT INFORMATION</div>
+        <div class="bottom-info-grid">
+            <div>
+                <div class="input-row"><label>MOL. WEIGHT <span class="txt-red">AIR=29</span></label><input type="text" class="fillable"></div>
+                <div class="input-row"><label>BOILING POINT (BP)</label><input type="text" class="fillable"></div>
+                <div class="input-row"><label>SOLUBILITY (Sol)</label><input type="text" class="fillable"></div>
+                <div class="input-row"><label>FLASH POINT (Fl.P)</label><input type="text" class="fillable"></div>
+            </div>
+            <div>
+                <div class="input-row"><label>IONIZATION <span class="txt-red">10.6eV</span></label><input type="text" class="fillable"></div>
+                <div class="input-row"><label>SPECIFIC GRAV <span class="txt-red">H20=1</span></label><input type="text" class="fillable"></div>
+                <div class="input-row"><label>REL. GAS DENS (RGasD)</label><input type="text" class="fillable"></div>
+                <div class="input-row"><label>VAPOR PRES. (VP)</label><input type="text" class="fillable"></div>
+            </div>
+            <div>
+                <div class="input-row"><label>FREEZING (FRZ)</label><input type="text" class="fillable"></div>
+                <div class="input-row"><label>MELTING (MLT)</label><input type="text" class="fillable"></div>
+                <div class="input-row"><label style="font-size: 11px;">MIN. EXPLOSIVE (MEC)</label><input type="text" class="fillable"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-grid">
+        <div class="notes-section">
+            <div class="section-bar">NOTES:</div>
+            <textarea class="fillable" placeholder="Enter tactical notes here..."></textarea>
+        </div>
+        <div class="button-group">
+            <button class="action-btn reset-btn" onclick="resetBoard()">RESET BOARD</button>
+            <button class="action-btn print-btn" onclick="window.print()">PRINT BOARD</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function resetBoard() {
+        if(confirm("Are you sure you want to clear the entire board?")) {
+            const board = document.getElementById('hazmatBoard');
+            const inputs = board.getElementsByTagName('input');
+            const textareas = board.getElementsByTagName('textarea');
+
+            for (let i = 0; i < inputs.length; i++) {
+                if (inputs[i].type === 'text') {
+                    inputs[i].value = '';
+                }
+            }
+            for (let i = 0; i < textareas.length; i++) {
+                textareas[i].value = '';
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

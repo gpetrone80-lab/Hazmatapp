@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foam Fire Flow Calculator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#059669', // Emerald 600
+                        'secondary': '#10b981', // Emerald 500
+                        'accent': '#3b82f6', // Blue 500
+                        'dark-bg': '#f3f4f6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for mobile-first aesthetics */
+        body {
+            background-color: #f3f4f6;
+            touch-action: manipulation; /* Improves responsiveness for touch input */
+            height: 100vh;
+        }
+        .app-container {
+            /* Max width set for tablets/large phones, full width on small phones */
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 3rem; /* Space for bottom content */
+        }
+        .card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        /* Custom radio styling for touch-friendly buttons */
+        .radio-button-group input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .radio-button-group label {
+            cursor: pointer;
+            padding: 12px 16px; /* Increased padding for better touch target */
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s;
+            border: 2px solid #d1d5db;
+            user-select: none; /* Prevent text selection on tap */
+        }
+        .radio-button-group input[type="radio"]:checked + label {
+            background-color: #059669; 
+            color: white;
+            border-color: #059669;
+            font-weight: 700;
+            box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3);
+        }
+        .radio-button-group label:hover:not(:checked) {
+            background-color: #e5e7eb;
+        }
+
+        /* Result Box Styling */
+        .result-box {
+            min-height: 110px;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+    <div id="app" class="app-container bg-dark-bg">
+        
+        <!-- HEADER -->
+        <header class="bg-primary p-6 text-white text-center rounded-b-xl shadow-lg mb-6">
+            <h1 class="text-2xl font-extrabold">Foam Flow App</h1>
+            <p class="text-sm font-light opacity-80">Fire Suppression Calculation Tool</p>
+        </header>
+
+        <main class="flex-grow p-4">
+            
+            <!-- INPUT SECTION -->
+            <div class="mb-6 p-5 bg-white rounded-xl card border-t-4 border-accent">
+                <label for="inputX" class="block text-sm font-semibold text-gray-700 mb-2">
+                    AREA INPUT (Square Feet)
+                </label>
+                <input type="number" id="inputX" value="1000" min="0" step="1" inputmode="numeric"
+                       oninput="calculate()"
+                       class="w-full p-4 border-2 border-accent rounded-xl text-3xl font-mono text-center focus:ring-accent focus:border-accent transition duration-150 shadow-inner"
+                       placeholder="e.g., 1000">
+            </div>
+
+            <div class="space-y-6">
+                <!-- FUNCTION 1 / NAR Factor Selection -->
+                <div class="p-5 bg-white rounded-xl card">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l2-2 2 2v13M9 19H7a2 2 0 01-2-2v-5a2 2 0 012-2h2m2 10h2a2 2 0 002-2v-5a2 2 0 00-2-2h-2M9 19v-3" />
+                        </svg>
+                        Step 1: Application Type (NAR)
+                    </h2>
+                    <p class="text-xs text-gray-500 mb-4">Select the material to set the Necessary Application Rate (NAR) Factor.</p>
+                    
+                    <div class="radio-button-group grid grid-cols-2 gap-4" onchange="calculate()">
+                        <input type="radio" id="nar01" name="narFactor" value="0.1" checked>
+                        <label for="nar01">
+                            <span class="block text-xl">0.1</span>
+                            <span class="block text-xs font-normal opacity-80 mt-1">Hydrocarbon</span>
+                        </label>
+
+                        <input type="radio" id="nar02" name="narFactor" value="0.2">
+                        <label for="nar02">
+                            <span class="block text-xl">0.2</span>
+                            <span class="block text-xs font-normal opacity-80 mt-1">Polar Solv</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- FUNCTION 2 / CPM Factor Selection -->
+                <div class="p-5 bg-white rounded-xl card">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2-3 .895-3 2 1.343 2 3 2m-3 2h6m-9-2h9.75M12 5a2 2 0 110 4 2 2 0 010-4z" />
+                        </svg>
+                        Step 2: Foam Concentrate % (CPM)
+                    </h2>
+                    <p class="text-xs text-gray-500 mb-4">Select the foam concentration percentage for Concentrate Per Minute (CPM) calculation.</p>
+                    <div class="radio-button-group grid grid-cols-2 gap-4" onchange="calculate()">
+                        <input type="radio" id="cpm003" name="cpmFactor" value="0.03" checked>
+                        <label for="cpm003">
+                            <span class="block text-xl">3% (0.03)</span>
+                            <span class="block text-xs font-normal opacity-80 mt-1">Hydrocarbon</span>
+                        </label>
+
+                        <input type="radio" id="cpm006" name="cpmFactor" value="0.06">
+                        <label for="cpm006">
+                            <span class="block text-xl">6% (0.06)</span>
+                            <span class="block text-xs font-normal opacity-80 mt-1">Polar Solvent</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CALCULATE & RESET BUTTONS -->
+            <div class="mt-8 space-y-4">
+                <button onclick="calculate()"
+                        class="w-full p-4 bg-accent hover:bg-blue-700 text-white font-bold text-xl rounded-xl transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-accent focus:ring-opacity-50 shadow-lg">
+                    Calculate Needs
+                </button>
+
+                <button onclick="resetApp()"
+                        class="w-full p-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold text-lg rounded-xl transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-gray-300 focus:ring-opacity-50 shadow">
+                    Reset Form
+                </button>
+            </div>
+
+            <!-- RESULTS DISPLAY SECTION -->
+            <h2 class="text-xl font-bold text-gray-800 mt-8 mb-4">Results (GPM / Gallons)</h2>
+
+            <div class="grid grid-cols-2 gap-4">
+
+                <!-- Result 1: NAR (Water Flow) -->
+                <div class="result-box bg-secondary text-white p-4 rounded-xl flex flex-col justify-center items-center shadow-md">
+                    <p class="text-xs font-light opacity-90">Flow Rate (GPM)</p>
+                    <p class="text-4xl font-extrabold mt-1" id="resultNAR">100.0</p>
+                    <p class="text-lg font-semibold mt-1">NAR</p>
+                </div>
+
+                <!-- Result 2: Overall Water Need -->
+                <div class="result-box bg-indigo-600 text-white p-4 rounded-xl flex flex-col justify-center items-center shadow-md">
+                    <p class="text-xs font-light opacity-90">Total Water (Gallons)</p>
+                    <p class="text-4xl font-extrabold mt-1" id="resultOverallFlow">1500.0</p>
+                    <p class="text-lg font-semibold mt-1">15 Min Need</p>
+                </div>
+                
+                <!-- Result 3: Concentrate per Minute (CPM) -->
+                <div class="result-box bg-red-600 text-white p-4 rounded-xl flex flex-col justify-center items-center shadow-md">
+                    <p class="text-xs font-light opacity-90">Concentrate Flow (GPM)</p>
+                    <p class="text-4xl font-extrabold mt-1" id="resultCPM">3.0</p>
+                    <p class="text-lg font-semibold mt-1">CPM</p>
+                </div>
+
+                <!-- Result 4: Foam Need for Full Application -->
+                <div class="result-box bg-orange-500 text-white p-4 rounded-xl flex flex-col justify-center items-center shadow-md">
+                    <p class="text-xs font-light opacity-90">Total Concentrate (Gallons)</p>
+                    <p class="text-4xl font-extrabold mt-1" id="resultFoamNeed">45.0</p>
+                    <p class="text-lg font-semibold mt-1">Foam Need</p>
+                </div>
+
+            </div>
+        </main>
+        
+        <footer class="text-center text-xs text-gray-500 mt-6 pt-4 border-t border-gray-200">
+            <p>Calculations based on 15 minutes of continuous application.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // Constants
+        const FIXED_MINUTES = 15;
+
+        // Elements
+        const inputXEl = document.getElementById('inputX');
+        const resultNAREl = document.getElementById('resultNAR');
+        const resultCPMEI = document.getElementById('resultCPM');
+        const resultFoamNeedEl = document.getElementById('resultFoamNeed');
+        const resultOverallFlowEl = document.getElementById('resultOverallFlow');
+
+        // Get all radio elements to attach an event listener group-wide
+        const radioGroups = document.querySelectorAll('.radio-button-group');
+        
+        /**
+         * Reads input values and performs all calculations based on the user's selections.
+         */
+        function calculate() {
+            // 1. Get Base Input 'X' (Area)
+            // Use '|| 0' to handle null/empty string gracefully, ensuring a number is used.
+            const inputX = parseFloat(inputXEl.value) || 0;
+            
+            // 2. Get Function 1 (NAR) Factor
+            const narFactorEl = document.querySelector('input[name="narFactor"]:checked');
+            const narFactor = parseFloat(narFactorEl ? narFactorEl.value : 0);
+
+            // 3. Get Function 2 (CPM) Factor
+            const cpmFactorEl = document.querySelector('input[name="cpmFactor"]:checked');
+            const cpmFactor = parseFloat(cpmFactorEl ? cpmFactorEl.value : 0);
+
+            // Prevent negative area input
+            if (inputX < 0) {
+                 // In a real mobile app, you would display an error modal.
+                 console.error("Area must be a positive number.");
+                 resultNAREl.textContent = "Error";
+                 resultCPMEI.textContent = "Error";
+                 resultFoamNeedEl.textContent = "Error";
+                 resultOverallFlowEl.textContent = "Error";
+                 return;
+            }
+
+
+            // --- FUNCTION 1: Necessary Application Rate (NAR) [GPM] ---
+            // Formula: Area (Sq/Ft) * NAR_Factor
+            const nar = inputX * narFactor;
+            resultNAREl.textContent = nar.toFixed(1);
+
+
+            // --- FUNCTION 2: Concentrate per Minute (CPM) [GPM] ---
+            // Formula: NAR * CPM_Factor (%)
+            const cpm = nar * cpmFactor;
+            resultCPMEI.textContent = cpm.toFixed(1);
+
+
+            // --- FUNCTION 3: Foam Need for Full Application [Gallons] ---
+            // Formula: CPM * 15 Minutes
+            const foamNeed = cpm * FIXED_MINUTES;
+            resultFoamNeedEl.textContent = foamNeed.toFixed(1);
+
+
+            // --- FUNCTION 4: Overall Flow (Water Need) [Gallons] ---
+            // Formula: NAR * 15 Minutes
+            const overallFlow = nar * FIXED_MINUTES;
+            resultOverallFlowEl.textContent = overallFlow.toFixed(1);
+        }
+
+        /**
+         * Resets the form inputs and calculations.
+         */
+        function resetApp() {
+            // Clear the area input
+            inputXEl.value = ""; 
+            
+            // Reset Radios to default (Hydrocarbon / 3%)
+            document.getElementById('nar01').checked = true;
+            document.getElementById('cpm003').checked = true;
+            
+            // Recalculate (this will set results to 0.0 since input is empty/0)
+            calculate();
+        }
+
+        // Initialize the calculation and set up listeners on page load
+        window.onload = function() {
+            // Ensure default radios are checked and trigger initial calculation
+            document.getElementById('nar01').checked = true;
+            document.getElementById('cpm003').checked = true;
+            
+            // Initial run to populate fields
+            calculate();
+            
+            // Set up a listener on the main input field for real-time calculation
+            inputXEl.addEventListener('input', calculate);
+
+            // Attach listeners to both radio groups for changes
+            radioGroups.forEach(group => {
+                group.addEventListener('change', calculate);
+            });
+        };
+
+    </script>
+</body>
+</html>
