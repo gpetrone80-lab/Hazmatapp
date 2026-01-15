@@ -2,12 +2,11 @@ const CACHE_NAME = 'superfund-v1';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css',
+  './style.css',
   './Hazmat_logo.png',
   './Foamcalculator.html',
   './Hazmatboard.html',
-  './manifest.json',
-  'https://cdn.tailwindcss.com'
+  './manifest.json'
 ];
 
 // Install Event: Cache files
