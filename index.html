@@ -4,8 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hazmat Form Portal</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1c92d2">
+    <link rel="apple-touch-icon" href="Hazmat_logo.png">
+    
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="Hazmat_logo.png">
+
+    <style>
+        /* Mobile View Toggle Switch */
+        .switch-wrapper { display: flex; align-items: center; gap: 8px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #0077b6; }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        /* Bookmark Instructions */
+        .bookmark-instructions { text-align: left; margin-top: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+        .bookmark-instructions p { margin-bottom: 15px; }
+        .bookmark-instructions strong { color: var(--text-main); }
+        
+        /* Copy Message */
+        .copy-message { display: none; color: #28a745; margin-top: 10px; font-size: 13px; font-weight: 600; }
+        
+        /* Mobile Mode Modifier (if not in main css) */
+        .container.mobile-mode { max-width: 400px; }
+    </style>
 </head>
 <body data-theme="glass">
 
@@ -17,25 +44,53 @@
         </select>
 
         <button id="modeToggle" class="icon-btn" title="Toggle Dark/Light Mode">🌙</button>
-        <button id="shareBtn" class="icon-btn" title="Share Portal Link">🔗</button>
         
+        <button id="installBtn" class="icon-btn" style="display:none;" title="Install App">⬇️</button>
+        
+        <button id="shareBtn" class="icon-btn" title="Share Portal Link">🔗</button>
+
+        <button id="bookmarkBtn" class="icon-btn" title="Bookmark / Add to Home Screen">⭐</button>
+
+        <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+
+        <div class="switch-wrapper" title="Switch between Desktop and Mobile width">
+            <span>📱</span>
+            <label class="switch">
+                <input type="checkbox" id="viewToggle">
+                <span class="slider round"></span>
+            </label>
         </div>
+    </div>
 
     <div id="shareModal" class="modal">
         <div class="modal-content">
             <span class="close-modal close-share">&times;</span>
             <h3 class="share-title">Share Portal</h3>
-            <p class="share-text">Copy link:</p>
-            <div style="display:flex; gap:10px;">
+            <p class="share-text">Copy the link below to share this page with your team:</p>
+            <div style="display:flex; gap:10px; align-items:center;">
                 <input type="text" id="shareInput" class="std-input" readonly>
-                <button id="copyBtn" class="link-btn primary" style="width:auto;">Copy</button>
+                <button id="copyBtn" class="link-btn primary" style="width:auto; padding: 12px 20px;">Copy</button>
             </div>
-            <div id="copyMessage" style="color:green; display:none; margin-top:10px;">Copied!</div>
+            <div id="copyMessage" class="copy-message">✅ Link Copied to Clipboard!</div>
+        </div>
+    </div>
+
+    <div id="bookmarkModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal close-bookmark">&times;</span>
+            <h3 class="share-title">Add to Favorites</h3>
+            <div class="bookmark-instructions">
+                <p><strong>📱 iPhone / iPad:</strong><br>Tap the Share button <span style="font-size:16px">⎋</span> then select "Add to Home Screen".</p>
+                <p><strong>🤖 Android:</strong><br>Tap the Menu icon <span style="font-size:16px">⋮</span> then select "Add to Home Screen" or "Install App".</p>
+                <p><strong>💻 Desktop:</strong><br>Press <code>Ctrl + D</code> (Windows) or <code>Cmd + D</code> (Mac) to bookmark this page.</p>
+            </div>
         </div>
     </div>
 
     <div class="container" id="mainContainer">
-        <img src="Hazmat_logo.png" alt="Logo" class="profile-img">
+        <img src="Hazmat_logo.png" alt="Pinellas County Hazmat Team Logo" class="profile-img" onerror="this.style.display='none'; document.getElementById('alt-logo').style.display='flex'">
+        <div id="alt-logo" style="display:none; width:100px; height:100px; border-radius:50%; background:#fff; margin:0 auto 20px; align-items:center; justify-content:center; font-size:40px; border:2px solid #eee;">⚠️</div>
+
         <div class="profile-title" id="pageTitle">Company Forms Portal</div>
         <div class="profile-bio" id="pageBio">Select a category below to access the relevant form.</div>
 
@@ -43,66 +98,23 @@
             <input type="text" id="searchInput" class="std-input" placeholder="🔍 Search forms, protocols...">
         </div>
 
-        <div id="buttonContainer" style="display:flex; flex-direction:column; gap:14px;"></div>
+        <div id="buttonContainer" class="link-list"></div>
 
-        <footer>&copy; <span id="year"></span> All Rights Reserved.</footer>
+        <footer>
+            &copy; <span id="year"></span> All Rights Reserved.
+        </footer>
     </div>
 
     <script>
-        // --- DATA & RENDER LOGIC ---
-        const config = {
-            pageTitle: "Pinellas County Hazmat Team",
-            pageBio: "Select a category below to access the Hazmat Team forms.",
-            links: [
-                { type: "header", title: "Field Tools" },
-                { title: "Skydio Log In", url: "https://cloud.skydio.com/entry/login" },
-                { title: "Foam Calculator", url: "Foamcalculator.html" },
-                { title: "Hazmat Board", url: "Hazmatboard.html" },
-                { title: "Cameo Chemicals", url: "https://cameochemicals.noaa.gov/" },
-                { title: "ERG (Response Guide)", url: "https://www.phmsa.dot.gov/sites/phmsa.dot.gov/files/2024-04/ERG2024-Eng-Web-a.pdf" },
-                { type: "header", title: "Medical" },
-                { title: "Hazmat Medical Protocol", url: "#" }, // Add real link
-                { type: "header", title: "SOP & Forms" },
-                { title: "Hazmat SOP", url: "#" }, // Add real link
-                { title: "ICS FORMS", url: "#" }, // Add real link
-            ]
-        };
-
-        // Render
-        document.getElementById('pageTitle').textContent = config.pageTitle;
-        document.getElementById('pageBio').textContent = config.pageBio;
-        document.getElementById('year').textContent = new Date().getFullYear();
-        const container = document.getElementById('buttonContainer');
-
-        config.links.forEach(link => {
-            if (link.type === 'header') {
-                const header = document.createElement('div');
-                header.className = 'section-header';
-                header.textContent = link.title;
-                container.appendChild(header);
-            } else {
-                const a = document.createElement('a');
-                a.className = 'link-btn';
-                a.href = link.url;
-                a.textContent = link.title;
-                if(link.url.startsWith('http')) a.target = "_blank";
-                container.appendChild(a);
-            }
-        });
-
-        // --- SEARCH LOGIC ---
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.link-btn').forEach(btn => {
-                btn.style.display = btn.textContent.toLowerCase().includes(term) ? 'block' : 'none';
-            });
-            // Simple header hiding logic could be added here
-        });
-
-        // --- THEME LOGIC (WITH SAVE) ---
+        // =========================================================
+        //  1. UI INTERACTION LOGIC
+        // =========================================================
+        
         const body = document.body;
         const themeSelect = document.getElementById('themeSelect');
         const modeToggle = document.getElementById('modeToggle');
+        const viewToggle = document.getElementById('viewToggle');
+        const mainContainer = document.getElementById('mainContainer');
 
         // Load saved settings
         if(localStorage.getItem('theme')) {
@@ -114,26 +126,221 @@
             modeToggle.textContent = '☀️';
         }
 
+        // Theme Switching
         themeSelect.addEventListener('change', (e) => {
             body.setAttribute('data-theme', e.target.value);
             localStorage.setItem('theme', e.target.value);
         });
 
+        // Dark/Light Mode Toggle
         modeToggle.addEventListener('click', () => {
             body.classList.toggle('dark-mode');
             const isDark = body.classList.contains('dark-mode');
             modeToggle.textContent = isDark ? '☀️' : '🌙';
             localStorage.setItem('darkMode', isDark);
         });
+
+        // Mobile View Toggle
+        viewToggle.addEventListener('change', function() {
+            if(this.checked) {
+                mainContainer.classList.add('mobile-mode');
+            } else {
+                mainContainer.classList.remove('mobile-mode');
+            }
+        });
+
+        // =========================================================
+        //  2. POPUP MODAL LOGIC (SHARE & BOOKMARK)
+        // =========================================================
         
-        // Share Modal Logic (simplified for brevity)
+        // Share Modal Elements
+        const shareBtn = document.getElementById('shareBtn');
         const shareModal = document.getElementById('shareModal');
-        document.getElementById('shareBtn').onclick = () => {
+        const closeShare = document.querySelector('.close-share');
+        const shareInput = document.getElementById('shareInput');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyMessage = document.getElementById('copyMessage');
+
+        // Bookmark Modal Elements
+        const bookmarkBtn = document.getElementById('bookmarkBtn');
+        const bookmarkModal = document.getElementById('bookmarkModal');
+        const closeBookmark = document.querySelector('.close-bookmark');
+
+        // OPEN Share Modal
+        shareBtn.onclick = function() {
             shareModal.style.display = "block";
-            document.getElementById('shareInput').value = window.location.href;
+            shareInput.value = window.location.href; 
+        }
+
+        // OPEN Bookmark Modal
+        bookmarkBtn.onclick = function() {
+            bookmarkModal.style.display = "block";
+        }
+
+        // CLOSE Modals (X button)
+        closeShare.onclick = function() { shareModal.style.display = "none"; copyMessage.style.display = "none"; }
+        closeBookmark.onclick = function() { bookmarkModal.style.display = "none"; }
+
+        // CLOSE Modals (Click outside)
+        window.onclick = function(event) {
+            if (event.target == shareModal) {
+                shareModal.style.display = "none";
+                copyMessage.style.display = "none";
+            }
+            if (event.target == bookmarkModal) {
+                bookmarkModal.style.display = "none";
+            }
+        }
+
+        // Copy Logic
+        copyBtn.onclick = function() {
+            shareInput.select();
+            shareInput.setSelectionRange(0, 99999); 
+            if (navigator.clipboard && window.isSecureContext) {
+                 navigator.clipboard.writeText(shareInput.value).then(() => { showSuccess(); });
+            } else {
+                document.execCommand('copy');
+                showSuccess();
+            }
+        }
+
+        function showSuccess() {
+            copyMessage.style.display = "block";
+            setTimeout(() => { copyMessage.style.display = "none"; }, 2500);
+        }
+
+        // =========================================================
+        //  3. SEARCH LOGIC
+        // =========================================================
+        const searchInput = document.getElementById('searchInput');
+        
+        searchInput.addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const buttons = document.querySelectorAll('.link-btn');
+            const headers = document.querySelectorAll('.section-header');
+            
+            buttons.forEach(btn => {
+                const text = btn.textContent.toLowerCase();
+                if(text.includes(term)) {
+                    btn.classList.remove('hidden-item');
+                } else {
+                    btn.classList.add('hidden-item');
+                }
+            });
+
+            if (term !== "") {
+                headers.forEach(h => h.style.display = 'none');
+            } else {
+                headers.forEach(h => h.style.display = 'block');
+            }
+        });
+
+        // =========================================================
+        //  4. DATA CONFIGURATION (FROM MASTER COPY)
+        // =========================================================
+
+        const config = {
+            pageTitle: "Pinellas County Hazmat Team",
+            pageBio: "Select a category below to access the Hazmat Team forms.",
+            
+            links: [
+                // --- FIELD TOOLS ---
+                { type: "header", title: "Field Tools" },
+                { title: "Skydio Log In ",            url: "https://cloud.skydio.com/entry/login" },
+                { title: "Foam Calculator",           url: "Foamcalculator.html" },
+                { title: "Hazmat Board",              url: "Hazmatboard.html" },
+                { title: "Cameo Chemicals",           url: "https://cameochemicals.noaa.gov/" },
+                { title: "E-Plan",                    url: "https://erplan.net/eplan/home.htm" },
+                { title: "ERG (Response Guide)",      url: "https://www.phmsa.dot.gov/sites/phmsa.dot.gov/files/2024-04/ERG2024-Eng-Web-a.pdf" },
+
+                // --- MEDICAL ---
+                { type: "header", title: "Medical" },
+                { title: "Hazmat Medical Protocol",   url: "https://pcemsomd.com/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=182&wpfd_file_id=17916&token=a4b2d66b00097418225526f1fa3d79c2&preview=1" },
+                { title: "Chemical Exposure Report",  url: "https://drive.google.com/file/d/18yGclmktryJsGuY8WvmCQz_mxyrynbSR/view" },
+
+                // --- SOP ---
+                { type: "header", title: "SOP & Forms" },
+                { title: "Hazmat SOP",                url: "https://drive.google.com/file/d/1w2cM9lQmIRsNm_4x9wI7aFSi0Y5hcJIJ/view" },
+                { title: "SERC",                      url: "https://drive.google.com/file/d/1LZ8HbqDWq8bAgvF2kNMxooPtrktz7kV_/view" },
+                { title: "Worksheets",                url: "https://drive.google.com/drive/folders/1wSozqD_x9Daf_DzcqaiWXOkEqayYC92e" },
+                { title: "ICS FORMS",                 url: "https://drive.google.com/drive/folders/1uBn9DyoAmtP1llCI6U4z8QhoaEneKj9e" },
+                { title: "Clean up Contractor List",  url: "https://drive.google.com/file/d/1KyzPEEA8_3gvWr8bloVazYOWcv17Ryho/view" },
+
+                // --- TRAINING ---
+                { type: "header", title: "Training" },
+                { title: "Training Log",              url: "https://forms.office.com/pages/responsepage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZ__pVVX_9UM05QUEZYVzlDWUpTQ1E2NVNWUzdENFNXNy4u&origin=lprLink&route=shorturl" },
+                { title: "Hazmat Survey",             url: "https://forms.office.com/pages/responsepage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAZ__pVVX_9UM0pSVEJINDVPM0E1NjYwOUlHUjJKQjNKQS4u&route=shorturl" },
+
+                // --- RESOURCES ---
+                { type: "header", title: "Support" },
+                { title: "Open Backup Hazmat App",    url: "https://www.jotform.com/app/251995835030158" },
+                { title: "Submit App Suggestion",     url: "mailto:lpetrone@palmharborfd.com?subject=Hazmat%20App%20Suggestion" }
+            ]
         };
-        document.querySelector('.close-share').onclick = () => shareModal.style.display = "none";
-        window.onclick = (e) => { if(e.target == shareModal) shareModal.style.display = "none"; };
+
+        // =========================================================
+        //  5. RENDER LOGIC
+        // =========================================================
+
+        document.getElementById('pageTitle').textContent = config.pageTitle;
+        document.getElementById('pageBio').textContent = config.pageBio;
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        const container = document.getElementById('buttonContainer');
+
+        config.links.forEach(link => {
+            if (link.type === 'header') {
+                const header = document.createElement('div');
+                header.className = 'section-header';
+                header.textContent = link.title;
+                container.appendChild(header);
+            } else if (link.title && link.title.trim() !== "") {
+                const a = document.createElement('a');
+                a.className = 'link-btn';
+                a.href = link.url;
+                a.textContent = link.title;
+                
+                if (link.url.startsWith('http')) {
+                    a.target = "_blank";
+                    a.rel = "noopener noreferrer";
+                }
+                container.appendChild(a);
+            }
+        });
+
+        // =========================================================
+        //  6. PWA / SERVICE WORKER LOGIC
+        // =========================================================
+        
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker failed', err));
+            });
+        }
+
+        // Install Prompt
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'flex'; // Show the button
+        });
+
+        installBtn.addEventListener('click', (e) => {
+            installBtn.style.display = 'none';
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the A2HS prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
+
     </script>
 </body>
 </html>
