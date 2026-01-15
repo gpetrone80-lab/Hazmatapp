@@ -309,18 +309,38 @@
         });
 
         // =========================================================
-        //  6. PWA / SERVICE WORKER LOGIC
+        //  6. PWA / SERVICE WORKER LOGIC (UPDATED AUTO-CHECKER)
         // =========================================================
         
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.log('Service Worker failed', err));
+                navigator.serviceWorker.register('./sw.js').then(registration => {
+                    console.log('Service Worker registered');
+
+                    // FORCE CHECK FOR UPDATES
+                    registration.update(); 
+
+                    // LISTENER FOR DETECTED UPDATES
+                    registration.onupdatefound = () => {
+                        const installingWorker = registration.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    // New content is available; ask user to refresh
+                                    if(confirm("New update available! Reload to apply?")) {
+                                        window.location.reload();
+                                    }
+                                } else {
+                                    console.log('Content is cached for offline use.');
+                                }
+                            }
+                        };
+                    };
+                }).catch(err => console.log('Service Worker failed', err));
             });
         }
 
-        // Install Prompt
+        // Install Prompt Logic
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
 

@@ -34,14 +34,29 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event: Network first, then Cache (Safe strategy)
-// Or Cache first, then Network (Better for offline tools)
-// Below is a "Cache First, falling back to Network" strategy suitable for static tools.
+// FETCH EVENT: Network First for HTML, Cache First for everything else
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cache if found, otherwise go to network
+  
+  // 1. Check if the request is for an HTML page (like index.html)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          // ONLINE: If we got a connection, show the new page AND save it to cache
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          // OFFLINE: If internet fails, grab the version from the cache
+          return caches.match(event.request);
+        })
+    );
+  } else {
+    // 2. For everything else (Images, CSS, Scripts), keep using Cache First for speed
+    event.respondWith(
+      caches.match(event.request).then((response) => {
         return response || fetch(event.request);
       })
   );
