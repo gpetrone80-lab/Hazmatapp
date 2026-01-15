@@ -1,4 +1,5 @@
-const CACHE_NAME = 'superfund-v6';
+// BUMPED VERSION TO v7 TO ENSURE FIXES LOAD
+const CACHE_NAME = 'superfund-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -18,6 +19,7 @@ self.addEventListener('install', (e) => {
       return cache.addAll(ASSETS);
     })
   );
+  self.skipWaiting(); // Force new service worker to activate immediately
 });
 
 // Activate Event: Clean up old caches
@@ -31,12 +33,13 @@ self.addEventListener('activate', (e) => {
       );
     })
   );
+  self.clients.claim(); // Take control of open pages immediately
 });
 
 // Fetch Event: Serve from cache, fallback to network
 self.addEventListener('fetch', (e) => {
-  // Do not cache Google Script calls
-  if (e.request.url.includes('script.google.com')) {
+  // Do not cache Google Script/Drive calls aggressively or they might break
+  if (e.request.url.includes('google.com') || e.request.url.includes('googleapis')) {
     return;
   }
   
