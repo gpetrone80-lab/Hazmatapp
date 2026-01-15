@@ -1,4 +1,4 @@
-const CACHE_NAME = 'superfund-v5';
+const CACHE_NAME = 'superfund-v6';
 const ASSETS = [
   './',
   './index.html',

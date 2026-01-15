@@ -7,9 +7,9 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1c92d2">
-    <link rel="apple-touch-icon" href="Hazmat_logo.png">
+    <link rel="apple-touch-icon" href="192x192.png">
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="Hazmat_logo.png">
 </head>
 <body data-theme="glass">
@@ -93,7 +93,7 @@
         const themeSelect = document.getElementById('themeSelect');
         const modeToggle = document.getElementById('modeToggle');
         if(localStorage.getItem('theme')) { body.setAttribute('data-theme', localStorage.getItem('theme')); themeSelect.value = localStorage.getItem('theme'); }
-        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = '☀️'; }
+        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = ☀️'; }
         themeSelect.addEventListener('change', (e) => { body.setAttribute('data-theme', e.target.value); localStorage.setItem('theme', e.target.value); });
         modeToggle.addEventListener('click', () => { body.classList.toggle('dark-mode'); localStorage.setItem('darkMode', body.classList.contains('dark-mode')); modeToggle.textContent = body.classList.contains('dark-mode') ? '☀️' : '🌙'; });
 
