@@ -1,9 +1,11 @@
-const CACHE_NAME = 'superfund-v2';
+const CACHE_NAME = 'superfund-v5';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './Hazmat_logo.png',
+  './192x192.png',
+  './512x512.png',
   './Foamcalculator.html',
   './Hazmatboard.html',
   './manifest.json'
@@ -33,7 +35,7 @@ self.addEventListener('activate', (e) => {
 
 // Fetch Event: Serve from cache, fallback to network
 self.addEventListener('fetch', (e) => {
-  // We do NOT cache the Google Script API calls, only the app files
+  // Do not cache Google Script calls
   if (e.request.url.includes('script.google.com')) {
     return;
   }

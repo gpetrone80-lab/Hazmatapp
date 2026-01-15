@@ -7,14 +7,16 @@
   "theme_color": "#1c92d2",
   "icons": [
     {
-      "src": "Hazmat_logo.png",
+      "src": "192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "Hazmat_logo.png",
+      "src": "512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
