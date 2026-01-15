@@ -92,10 +92,20 @@
         const body = document.body;
         const themeSelect = document.getElementById('themeSelect');
         const modeToggle = document.getElementById('modeToggle');
+        
         if(localStorage.getItem('theme')) { body.setAttribute('data-theme', localStorage.getItem('theme')); themeSelect.value = localStorage.getItem('theme'); }
-        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = ☀️'; }
+        
+        // FIXED: Added missing quote before the sun emoji below
+        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = '☀️'; }
+        
         themeSelect.addEventListener('change', (e) => { body.setAttribute('data-theme', e.target.value); localStorage.setItem('theme', e.target.value); });
-        modeToggle.addEventListener('click', () => { body.classList.toggle('dark-mode'); localStorage.setItem('darkMode', body.classList.contains('dark-mode')); modeToggle.textContent = body.classList.contains('dark-mode') ? '☀️' : '🌙'; });
+        
+        modeToggle.addEventListener('click', () => { 
+            body.classList.toggle('dark-mode'); 
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark); 
+            modeToggle.textContent = isDark ? '☀️' : '🌙'; 
+        });
 
         // CALCULATOR LOGIC
         const FIXED_MINUTES = 15;
