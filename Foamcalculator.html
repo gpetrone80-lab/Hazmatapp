@@ -8,11 +8,15 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1c92d2">
     <link rel="apple-touch-icon" href="192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hazmat App">
 
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="Hazmat_logo.png">
 </head>
-<body data-theme="glass">
+<body data-theme="rapid">
 
     <div class="view-controls">
         <a href="index.html" class="icon-btn" title="Back to Dashboard">🏠</a>
@@ -20,6 +24,7 @@
             <option value="glass">Glass Ocean</option>
             <option value="tactical">Tactical Ops</option>
             <option value="minimal">Swiss Minimal</option>
+            <option value="rapid" selected>Rapid Response</option>
         </select>
         <button id="modeToggle" class="icon-btn" title="Toggle Dark/Light Mode">🌙</button>
     </div>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERG Lookup (Offline)</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1c92d2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hazmat App">
+    <link rel="apple-touch-icon" href="192x192.png">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="Hazmat_logo.png">
+    <style>
+        .un-badge { display:inline-block; background:var(--header-color); color:#fff; font-weight:800; padding:4px 12px; border-radius:8px; }
+        .guide-num { font-size:44px; font-weight:800; color:var(--header-color); }
+        .mini-btn { padding:8px 12px; border-radius:8px; border:1px solid var(--text-secondary); background:transparent; color:var(--text-main); font-size:12px; font-weight:700; cursor:pointer; }
+        .tih-label { font-weight:800; margin:12px 0 6px; color:var(--header-color); }
+    </style>
+</head>
+<body data-theme="rapid">
+
+    <div class="view-controls">
+        <a href="index.html" class="icon-btn" title="Back to Dashboard">🏠</a>
+        <select id="themeSelect" class="theme-select" title="Change Design Style">
+            <option value="glass">Glass Ocean</option>
+            <option value="tactical">Tactical Ops</option>
+            <option value="minimal">Swiss Minimal</option>
+            <option value="rapid" selected>Rapid Response</option>
+        </select>
+        <button id="modeToggle" class="icon-btn" title="Toggle Dark/Light Mode">🌙</button>
+    </div>
+
+    <div class="container">
+        <div class="profile-title">ERG Lookup</div>
+        <div class="profile-bio">Offline ERG 2024 quick reference. Type a UN number or chemical name.</div>
+
+        <div class="input-group">
+            <input type="text" id="q" class="std-input" placeholder="🔍 UN number or chemical name..." autocomplete="off">
+        </div>
+
+        <div id="results" class="link-list"></div>
+        <div id="detail" style="display:none;"></div>
+
+        <div class="profile-bio" style="margin-top:20px; font-size:12px;">Quick reference from ERG 2024. Always verify against the official guidebook on scene.</div>
+    </div>
+
+    <script src="erg-data.js"></script>
+    <script>
+        // THEME LOGIC
+        const body = document.body;
+        const themeSelect = document.getElementById('themeSelect');
+        const modeToggle = document.getElementById('modeToggle');
+
+        if(localStorage.getItem('theme')) { body.setAttribute('data-theme', localStorage.getItem('theme')); themeSelect.value = localStorage.getItem('theme'); }
+        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = '🌞'; }
+
+        themeSelect.addEventListener('change', (e) => { body.setAttribute('data-theme', e.target.value); localStorage.setItem('theme', e.target.value); });
+
+        modeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            modeToggle.textContent = isDark ? '🌞' : '🌙';
+        });
+
+        // ERG SEARCH (fully offline)
+        const qEl = document.getElementById('q');
+        const resEl = document.getElementById('results');
+        const detEl = document.getElementById('detail');
+        const ERG_PDF = 'https://www.phmsa.dot.gov/sites/phmsa.dot.gov/files/2024-04/ERG2024-Eng-Web-a.pdf';
+
+        function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
+
+        qEl.addEventListener('input', searchERG);
+
+        function searchERG(){
+            const q = qEl.value.trim().toLowerCase();
+            detEl.style.display = 'none';
+            resEl.style.display = 'block';
+            if(!q){ resEl.innerHTML = ''; return; }
+            let uns = [];
+            const digits = q.replace(/^un\s*/, '');
+            if(/^\d{1,4}$/.test(digits) && ERG_UN[digits]){
+                uns = [digits];
+            } else {
+                const seen = {};
+                for(const name in ERG_NAME_INDEX){
+                    if(name.indexOf(q) !== -1){
+                        const un = ERG_NAME_INDEX[name];
+                        if(!seen[un]){ seen[un] = 1; uns.push(un); }
+                        if(uns.length >= 40) break;
+                    }
+                }
+                uns.sort((a, b) => parseInt(a) - parseInt(b));
+            }
+            if(!uns.length){ resEl.innerHTML = '<div class="profile-bio">No match. Try a UN number or chemical name.</div>'; return; }
+            resEl.innerHTML = '';
+            uns.forEach(un => {
+                const d = ERG_UN[un];
+                const a = document.createElement('a');
+                a.className = 'link-btn';
+                a.href = '#';
+                a.innerHTML = '<span class="un-badge">UN ' + un + '</span> &nbsp;' + esc(d.n) + '<span style="float:right; font-weight:800;">Guide ' + d.g + '</span>';
+                a.onclick = ev => { ev.preventDefault(); showDetail(un); };
+                resEl.appendChild(a);
+            });
+        }
+
+        function tihBlock(title, v){
+            if(v === 'TABLE3') return '<div class="info-card" style="margin-bottom:8px;"><b>' + title + ':</b> refer to <b>Table 3</b> in the ERG.</div>';
+            return '<div class="info-card" style="margin-bottom:8px;"><b>' + title + '</b><br>Isolate: ' + esc(v[0]) + '<br>Protect (day): ' + esc(v[1]) + '<br>Protect (night): ' + esc(v[2]) + '</div>';
+        }
+
+        function showDetail(un){
+            const d = ERG_UN[un];
+            let h = '<button class="mini-btn" onclick="backToResults()">\u2190 Back to results</button>';
+            h += '<div style="margin:14px 0 4px;"><span class="un-badge">UN ' + un + '</span></div>';
+            h += '<div class="profile-title" style="font-size:22px;">' + esc(d.n) + '</div>';
+            h += '<div class="card-grid" style="margin-top:12px;"><div class="info-card' + '"><div style="font-size:12px; opacity:.8;">ERG Guide</div><div class="guide-num">' + d.g + '</div></div></div>';
+            h += '<div class="section-header">Immediate precautionary measure</div>';
+            h += '<div class="profile-bio">' + (ERG_GUIDE_PRECAUTION[d.g] ? esc(ERG_GUIDE_PRECAUTION[d.g]) : 'See Guide ' + d.g + ' in the official ERG.') + '</div>';
+            if(d.t){
+                h += '<div class="section-header">Table 1 \u2014 TIH distances</div>';
+                d.t.forEach(e => {
+                    if(e.label) h += '<div class="tih-label">' + esc(e.label) + '</div>';
+                    h += tihBlock('Small spill', e.s);
+                    h += tihBlock('Large spill', e.l);
+                });
+            } else {
+                h += '<div class="profile-bio">Not a Table 1 TIH material. Follow the precautionary measure above.</div>';
+            }
+            h += '<div style="margin-top:16px;"><a class="link-btn" href="' + ERG_PDF + '" target="_blank" rel="noopener noreferrer">Open official ERG PDF</a></div>';
+            detEl.innerHTML = h;
+            detEl.style.display = 'block';
+            resEl.style.display = 'none';
+            window.scrollTo(0, 0);
+        }
+
+        function backToResults(){ detEl.style.display = 'none'; resEl.style.display = 'block'; }
+
+        // PWA REGISTER
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
+        }
+    </script>
+</body>
+</html>

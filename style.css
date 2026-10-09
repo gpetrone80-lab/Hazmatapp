@@ -129,6 +129,51 @@ body[data-theme="minimal"].dark-mode {
 }
 
 
+/* --- THEME 4: RAPID RESPONSE (Bright / Mobile-first / Civic) --- */
+body[data-theme="rapid"] {
+    --bg-gradient: #eaf4fa;
+    --container-bg: #ffffff;
+    --container-border: 1px solid #d4e2e9;
+    --container-shadow: 0 8px 26px rgba(7, 68, 100, 0.13);
+    --text-main: #102d3d;
+    --text-secondary: #527181;
+    --header-color: #086c9f;
+    --btn-bg: #ffffff;
+    --btn-text: #102d3d;
+    --btn-border: 1px solid #d4e2e9;
+    --btn-radius: 9px;
+    --btn-hover-transform: translateY(-2px);
+    --btn-hover-shadow: 0 8px 20px rgba(8, 108, 159, 0.18);
+    --btn-hover-color: #086c9f;
+    --search-bg: #ffffff;
+    --search-border: 1px solid #d4e2e9;
+    --controls-bg: #ffffff;
+    --controls-text: #102d3d;
+    --modal-bg: #ffffff;
+    --modal-overlay: rgba(16, 45, 61, 0.45);
+}
+
+body[data-theme="rapid"].dark-mode {
+    --bg-gradient: #0b2233;
+    --container-bg: #123043;
+    --container-border: 1px solid #1e4a63;
+    --container-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+    --text-main: #eaf4fa;
+    --text-secondary: #9db8c7;
+    --header-color: #7cc7ea;
+    --btn-bg: #1a3a52;
+    --btn-text: #eaf4fa;
+    --btn-border: 1px solid #2a5a78;
+    --btn-hover-color: #7cc7ea;
+    --search-bg: #0e2a3f;
+    --search-border: 1px solid #2a5a78;
+    --controls-bg: #123043;
+    --controls-text: #eaf4fa;
+    --modal-bg: #123043;
+    --modal-overlay: rgba(0, 0, 0, 0.6);
+}
+
+
 /* =========================================
    2. CORE STYLES
    ========================================= */

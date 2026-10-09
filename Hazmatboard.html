@@ -8,6 +8,10 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1c92d2">
     <link rel="apple-touch-icon" href="192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hazmat App">
 
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="Hazmat_logo.png">
@@ -32,11 +36,12 @@
         @media (max-width: 900px) { .middle-section-grid, .bottom-info-grid, .top-ident-grid { grid-template-columns: 1fr; } .input-row label { flex: 0 0 100px; } }
     </style>
 </head>
-<body data-theme="glass">
+<body data-theme="rapid">
 
     <div class="view-controls">
         <a href="index.html" class="icon-btn" title="Back to Dashboard">🏠</a>
-        <select id="themeSelect" class="theme-select"><option value="glass">Glass Ocean</option><option value="tactical">Tactical Ops</option><option value="minimal">Swiss Minimal</option></select>
+        <select id="themeSelect" class="theme-select"><option value="glass">Glass Ocean</option><option value="tactical">Tactical Ops</option><option value="minimal">Swiss Minimal</option>
+        <option value="rapid" selected>Rapid Response</option></select>
         <button id="modeToggle" class="icon-btn">🌙</button>
     </div>
 
@@ -109,9 +114,19 @@
         });
 
         function resetBoard() {
-            if(confirm("Clear board?")) { document.querySelectorAll('input, textarea').forEach(el => el.value = ''); }
+            if(confirm("Clear board?")) { document.querySelectorAll('input, textarea').forEach(el => el.value = ''); localStorage.removeItem(BOARD_KEY); }
         }
 
+        // BOARD AUTOSAVE (restores entries after reload)
+        const BOARD_KEY = 'hazmat_board_v1';
+        const boardFields = Array.from(document.querySelectorAll('.board-wrapper input, .board-wrapper textarea'));
+        try {
+            const saved = JSON.parse(localStorage.getItem(BOARD_KEY) || '[]');
+            boardFields.forEach((el, i) => { if (saved[i] !== undefined) el.value = saved[i]; });
+        } catch(e) {}
+        document.querySelector('.board-wrapper').addEventListener('input', () => {
+            localStorage.setItem(BOARD_KEY, JSON.stringify(boardFields.map(el => el.value)));
+        });
         // PWA REGISTER
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });

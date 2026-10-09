@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accountability Tracker</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1c92d2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hazmat App">
+    <link rel="apple-touch-icon" href="192x192.png">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="Hazmat_logo.png">
+    <style>
+        .zone-badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:800; color:#fff; vertical-align:middle; }
+        .z-hot { background:#d92525; } .z-warm { background:#e8930c; } .z-cold { background:#1e9e50; } .z-staging { background:#086c9f; }
+        .roster-row { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--btn-bg); border:var(--btn-border); border-radius:12px; margin-bottom:8px; }
+        .roster-main { flex:1; min-width:0; }
+        .roster-name { font-weight:700; }
+        .roster-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+        .mini-btn { padding:8px 12px; border-radius:8px; border:1px solid var(--text-secondary); background:transparent; color:var(--text-main); font-size:12px; font-weight:700; cursor:pointer; }
+        .par-ok { color:#1e9e50; font-weight:800; }
+        .log-row { font-size:13px; padding:8px 4px; border-bottom:1px solid var(--text-secondary); }
+    </style>
+</head>
+<body data-theme="rapid">
+
+    <div class="view-controls">
+        <a href="index.html" class="icon-btn" title="Back to Dashboard">🏠</a>
+        <select id="themeSelect" class="theme-select" title="Change Design Style">
+            <option value="glass">Glass Ocean</option>
+            <option value="tactical">Tactical Ops</option>
+            <option value="minimal">Swiss Minimal</option>
+            <option value="rapid" selected>Rapid Response</option>
+        </select>
+        <button id="modeToggle" class="icon-btn" title="Toggle Dark/Light Mode">🌙</button>
+    </div>
+
+    <div class="container">
+        <div class="profile-title">Accountability Tracker</div>
+        <div class="profile-bio">Log personnel by zone. Entry times are automatic.</div>
+
+        <div class="input-group">
+            <label for="pName" class="input-label">NAME</label>
+            <input type="text" id="pName" class="std-input" placeholder="e.g., J. Smith" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label for="pZone" class="input-label">ZONE</label>
+            <select id="pZone" class="std-input">
+                <option value="Hot">Hot Zone</option>
+                <option value="Warm">Warm Zone</option>
+                <option value="Cold">Cold Zone</option>
+                <option value="Staging">Staging</option>
+            </select>
+        </div>
+        <div style="margin-top:10px;">
+            <button onclick="addPerson()" class="link-btn primary">Add to Roster</button>
+        </div>
+
+        <div class="section-header" style="margin-top:25px;">Active Roster (<span id="activeCount">0</span>)</div>
+        <div style="margin-bottom:10px;">
+            <button onclick="parAll()" class="link-btn">PAR CHECK ALL</button>
+        </div>
+        <div id="lastPar" class="profile-bio" style="margin-bottom:10px;"></div>
+        <div id="roster"></div>
+
+        <div class="section-header" style="margin-top:25px;">Entry / Exit Log</div>
+        <div id="log"></div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button onclick="resetTracker()" class="link-btn" style="background:#d92525; color:white; border:none;">RESET</button>
+            <button onclick="window.print()" class="link-btn primary">PRINT</button>
+        </div>
+    </div>
+
+    <script>
+        // THEME LOGIC
+        const body = document.body;
+        const themeSelect = document.getElementById('themeSelect');
+        const modeToggle = document.getElementById('modeToggle');
+
+        if(localStorage.getItem('theme')) { body.setAttribute('data-theme', localStorage.getItem('theme')); themeSelect.value = localStorage.getItem('theme'); }
+        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = '🌞'; }
+
+        themeSelect.addEventListener('change', (e) => { body.setAttribute('data-theme', e.target.value); localStorage.setItem('theme', e.target.value); });
+
+        modeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            modeToggle.textContent = isDark ? '🌞' : '🌙';
+        });
+        // ACCOUNTABILITY LOGIC (saved on this device)
+        const LS_KEY = 'acct_tracker_v1';
+        let state = loadState();
+        function loadState(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || {active:[], log:[]}; } catch(e){ return {active:[], log:[]}; } }
+        function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+        function fmtTime(ts){ return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
+        function fmtDur(ms){ const m = Math.floor(ms/60000); if(m < 60) return m + 'm'; return Math.floor(m/60) + 'h ' + (m%60) + 'm'; }
+        function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
+
+        function addPerson(){
+            const nameEl = document.getElementById('pName');
+            const name = nameEl.value.trim();
+            if(!name){ nameEl.focus(); return; }
+            state.active.push({name: name, zone: document.getElementById('pZone').value, inAt: Date.now(), parAt: 0});
+            nameEl.value = '';
+            saveState(); render();
+        }
+        document.getElementById('pName').addEventListener('keydown', e => { if(e.key === 'Enter') addPerson(); });
+
+        function parOne(i){ state.active[i].parAt = Date.now(); saveState(); render(); }
+        function parAll(){ const now = Date.now(); state.active.forEach(p => p.parAt = now); saveState(); render(); }
+        function exitPerson(i){
+            const p = state.active.splice(i, 1)[0];
+            p.outAt = Date.now();
+            state.log.unshift(p);
+            saveState(); render();
+        }
+        function resetTracker(){ if(confirm('Clear entire roster and log?')){ state = {active:[], log:[]}; saveState(); render(); } }
+
+        const ZONE_CLS = {Hot:'z-hot', Warm:'z-warm', Cold:'z-cold', Staging:'z-staging'};
+        function render(){
+            const now = Date.now();
+            document.getElementById('activeCount').textContent = state.active.length;
+            const last = state.active.reduce((m, p) => Math.max(m, p.parAt || 0), 0);
+            document.getElementById('lastPar').textContent = state.active.length ? (last ? 'Last PAR: ' + fmtTime(last) : 'No PAR recorded yet') : '';
+            const r = document.getElementById('roster');
+            r.innerHTML = state.active.length ? '' : '<div class="profile-bio">No personnel logged.</div>';
+            state.active.forEach((p, i) => {
+                const div = document.createElement('div');
+                div.className = 'roster-row';
+                div.innerHTML =
+                    '<div class="roster-main"><div class="roster-name">' + esc(p.name) + ' <span class="zone-badge ' + (ZONE_CLS[p.zone] || '') + '">' + esc(p.zone).toUpperCase() + '</span></div>' +
+                    '<div class="roster-meta">In: ' + fmtTime(p.inAt) + ' &middot; Elapsed: ' + fmtDur(now - p.inAt) +
+                    (p.parAt ? ' &middot; <span class="par-ok">PAR \u2713 ' + fmtTime(p.parAt) + '</span>' : '') + '</div></div>' +
+                    '<button class="mini-btn" onclick="parOne(' + i + ')">PAR</button>' +
+                    '<button class="mini-btn" onclick="exitPerson(' + i + ')">Out</button>';
+                r.appendChild(div);
+            });
+            const l = document.getElementById('log');
+            l.innerHTML = state.log.length ? '' : '<div class="profile-bio">No entries yet.</div>';
+            state.log.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'log-row';
+                div.textContent = p.name + ' [' + p.zone + '] In ' + fmtTime(p.inAt) + ' \u2192 Out ' + fmtTime(p.outAt) + ' (' + fmtDur(p.outAt - p.inAt) + ')';
+                l.appendChild(div);
+            });
+        }
+        render();
+        setInterval(render, 30000);
+        // PWA REGISTER
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
+        }
+    </script>
+</body>
+</html>

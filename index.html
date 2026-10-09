@@ -9,6 +9,10 @@
     <meta name="theme-color" content="#1c92d2">
     
     <link rel="apple-touch-icon" href="192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hazmat App">
     
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="Hazmat_logo.png">
@@ -35,13 +39,14 @@
         .container.mobile-mode { max-width: 400px; }
     </style>
 </head>
-<body data-theme="glass">
+<body data-theme="rapid">
 
     <div class="view-controls">
         <select id="themeSelect" class="theme-select" title="Change Design Style">
             <option value="glass">Design 1: Glass Ocean</option>
             <option value="tactical">Design 2: Tactical Ops</option>
             <option value="minimal">Design 3: Swiss Minimal</option>
+            <option value="rapid" selected>Design 4: Rapid Response</option>
         </select>
 
         <button id="modeToggle" class="icon-btn" title="Toggle Dark/Light Mode">🌙</button>
@@ -250,6 +255,8 @@
                 { title: "Skydio Log In ",            url: "https://cloud.skydio.com/entry/login" },
                 { title: "Foam Calculator",           url: "Foamcalculator.html" },
                 { title: "Hazmat Board",              url: "Hazmatboard.html" },
+                { title: "Accountability Tracker",    url: "Accountability.html" },
+                { title: "ERG Lookup (Offline)",      url: "Erglookup.html" },
                 { title: "Cameo Chemicals",           url: "https://cameochemicals.noaa.gov/" },
                 { title: "E-Plan",                    url: "https://erplan.net/eplan/home.htm" },
                 { title: "ERG (Response Guide)",      url: "https://www.phmsa.dot.gov/sites/phmsa.dot.gov/files/2024-04/ERG2024-Eng-Web-a.pdf" },

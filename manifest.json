@@ -1,10 +1,18 @@
 {
+  "id": "./index.html",
   "name": "Hazmat Form Portal",
   "short_name": "Hazmat App",
+  "description": "Pinellas County Hazmat Team portal: field tools, foam calculator, hazmat board, SOPs, medical protocols and training links.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#f2fcfe",
   "theme_color": "#1c92d2",
+  "categories": [
+    "utilities",
+    "business"
+  ],
   "icons": [
     {
       "src": "Hazmat_logo.png",

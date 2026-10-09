@@ -1,5 +1,5 @@
-// BUMPED VERSION TO v7 TO ENSURE FIXES LOAD
-const CACHE_NAME = 'superfund-v7';
+// Hazmat PWA - cache version v10
+const CACHE_NAME = 'hazmat-pwa-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -9,43 +9,64 @@ const ASSETS = [
   './512x512.png',
   './Foamcalculator.html',
   './Hazmatboard.html',
-  './manifest.json'
+  './manifest.json',
+  './Accountability.html',
+  './Erglookup.html',
+  './erg-data.js'
 ];
 
-// Install Event: Cache files
+// Install: pre-cache the app shell
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
-  self.skipWaiting(); // Force new service worker to activate immediately
+  self.skipWaiting();
 });
 
-// Activate Event: Clean up old caches
+// Activate: remove old caches
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((key) => (key !== CACHE_NAME ? caches.delete(key) : undefined)))
+    )
   );
-  self.clients.claim(); // Take control of open pages immediately
+  self.clients.claim();
 });
 
-// Fetch Event: Serve from cache, fallback to network
+// Fetch:
+// - cross-origin requests (Google Drive, Skydio, ERG pdf, etc.) go straight to network
+// - navigations: network-first, fall back to cache, then offline to index.html
+// - same-origin assets: cache-first, then network (and refresh the cache)
 self.addEventListener('fetch', (e) => {
-  // Do not cache Google Script/Drive calls aggressively or they might break
-  if (e.request.url.includes('google.com') || e.request.url.includes('googleapis')) {
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(e.request, copy));
+          return res;
+        })
+        .catch(() =>
+          caches.match(e.request).then((r) => r || caches.match('./index.html'))
+        )
+    );
     return;
   }
-  
+
   e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request);
-    })
+    caches.match(e.request).then(
+      (res) =>
+        res ||
+        fetch(e.request).then((netRes) => {
+          if (e.request.method === 'GET' && netRes && netRes.ok) {
+            const copy = netRes.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(e.request, copy));
+          }
+          return netRes;
+        })
+    )
   );
 });
