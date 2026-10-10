@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accountability Tracker</title>
+    <title>Accountability Board</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1c92d2">
@@ -16,15 +16,46 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="Hazmat_logo.png">
     <style>
-        .zone-badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:800; color:#fff; vertical-align:middle; }
-        .z-hot { background:#d92525; } .z-warm { background:#e8930c; } .z-cold { background:#1e9e50; } .z-staging { background:#086c9f; }
-        .roster-row { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--btn-bg); border:var(--btn-border); border-radius:12px; margin-bottom:8px; }
-        .roster-main { flex:1; min-width:0; }
-        .roster-name { font-weight:700; }
-        .roster-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
-        .mini-btn { padding:8px 12px; border-radius:8px; border:1px solid var(--text-secondary); background:transparent; color:var(--text-main); font-size:12px; font-weight:700; cursor:pointer; }
-        .par-ok { color:#1e9e50; font-weight:800; }
-        .log-row { font-size:13px; padding:8px 4px; border-bottom:1px solid var(--text-secondary); }
+        /* Accountability Board - incident command style */
+        .ab { background:#10151b; color:#e8eef3; border-radius:14px; overflow:hidden; margin-top:12px; }
+        .ab * { box-sizing:border-box; }
+        .ab-top { background:#b31b1b; padding:14px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .ab-top .t { font-size:20px; font-weight:800; letter-spacing:.5px; }
+        .ab-top .sub { font-size:12px; opacity:.85; width:100%; margin-top:-6px; }
+        .ab-top input.inc { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.35); color:#fff; border-radius:8px; padding:8px 12px; font-size:14px; flex:1; min-width:160px; }
+        .ab-top input.inc::placeholder { color:rgba(255,255,255,.65); }
+        .ab-clock { font-variant-numeric:tabular-nums; font-weight:700; font-size:16px; background:rgba(0,0,0,.3); padding:8px 14px; border-radius:8px; }
+        .ab-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:14px 18px 4px; }
+        .ab-stat { background:#1a222b; border:1px solid #2c3947; border-radius:12px; padding:12px; text-align:center; }
+        .ab-stat .n { font-size:34px; font-weight:800; line-height:1; }
+        .ab-stat .l { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9fb0bf; margin-top:6px; }
+        .ab-stat.blue .n { color:#2f81f7; } .ab-stat.green .n { color:#2ea043; } .ab-stat.amber .n { color:#d29922; }
+        .ab-form { display:grid; grid-template-columns:1fr 90px 1fr 1fr auto; gap:8px; padding:14px 18px; }
+        .ab-form input, .ab-form select { background:#1a222b; border:1px solid #2c3947; color:#e8eef3; border-radius:10px; padding:12px 10px; font-size:15px; width:100%; }
+        .ab-form button { background:#b31b1b; color:#fff; border:none; border-radius:10px; padding:0 22px; font-size:15px; font-weight:800; cursor:pointer; }
+        .ab-form button:active { transform:scale(.97); }
+        .ab-table { width:100%; border-collapse:collapse; font-size:14px; }
+        .ab-table th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9fb0bf; padding:10px 12px; border-bottom:1px solid #2c3947; }
+        .ab-table td { padding:10px 12px; border-bottom:1px solid #1e2830; vertical-align:middle; }
+        .ab-unit { display:inline-block; background:#b31b1b; color:#fff; font-weight:800; padding:5px 12px; border-radius:8px; font-size:14px; }
+        .ab-pers { font-size:20px; font-weight:800; }
+        .ab-table select { background:#1a222b; border:1px solid #2c3947; color:#e8eef3; border-radius:8px; padding:9px 8px; font-size:14px; max-width:170px; }
+        .ab-del { background:none; border:none; color:#8a97a3; font-size:20px; cursor:pointer; padding:4px 8px; }
+        .ab-del:hover { color:#ff6b6b; }
+        .ab-time { font-size:11px; color:#8a97a3; font-variant-numeric:tabular-nums; }
+        .ab-sec { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9fb0bf; padding:10px 18px 2px; }
+        .ab-groups { display:flex; flex-wrap:wrap; gap:8px; padding:6px 18px 8px; }
+        .ab-chip { background:#1a222b; border:1px solid #2c3947; border-radius:999px; padding:7px 14px; font-size:13px; font-weight:700; }
+        .ab-chip b { color:#ffb703; margin-left:6px; }
+        .ab-chip.dept b { color:#2f81f7; }
+        .ab-empty { text-align:center; color:#8a97a3; padding:26px; font-size:14px; }
+        .ab-note { font-size:12px; color:#8a97a3; padding:0 18px 8px; line-height:1.5; }
+        .ab-reset { margin:0 18px 18px; background:transparent; border:1px solid #5a6a78; color:#9fb0bf; border-radius:10px; padding:10px 18px; font-size:13px; font-weight:700; cursor:pointer; }
+        @media (max-width:640px){
+            .ab-form { grid-template-columns:1fr 80px; }
+            .ab-form button { padding:12px; grid-column:1 / -1; }
+            .ab-table th:nth-child(5), .ab-table td:nth-child(5) { display:none; }
+        }
     </style>
 </head>
 <body data-theme="rapid">
@@ -41,39 +72,64 @@
     </div>
 
     <div class="container">
-        <div class="profile-title">Accountability Tracker</div>
-        <div class="profile-bio">Log personnel by zone. Entry times are automatic.</div>
+        <div class="ab">
+            <div class="ab-top">
+                <div>
+                    <div class="t">Accountability Board</div>
+                    <div class="sub">Pinellas County Hazmat Team &mdash; live personnel accountability</div>
+                </div>
+                <input class="inc" id="abIncident" placeholder="Incident name / address&hellip;">
+                <div class="ab-clock" id="abClock">--:--:--</div>
+            </div>
 
-        <div class="input-group">
-            <label for="pName" class="input-label">NAME</label>
-            <input type="text" id="pName" class="std-input" placeholder="e.g., J. Smith" autocomplete="off">
-        </div>
-        <div class="input-group">
-            <label for="pZone" class="input-label">ZONE</label>
-            <select id="pZone" class="std-input">
-                <option value="Hot">Hot Zone</option>
-                <option value="Warm">Warm Zone</option>
-                <option value="Cold">Cold Zone</option>
-                <option value="Staging">Staging</option>
-            </select>
-        </div>
-        <div style="margin-top:10px;">
-            <button onclick="addPerson()" class="link-btn primary">Add to Roster</button>
-        </div>
+            <div class="ab-stats">
+                <div class="ab-stat blue"><div class="n" id="stScene">0</div><div class="l">On scene</div></div>
+                <div class="ab-stat green"><div class="n" id="stAssigned">0</div><div class="l">Assigned</div></div>
+                <div class="ab-stat amber"><div class="n" id="stAvail">0</div><div class="l">Available to command</div></div>
+            </div>
 
-        <div class="section-header" style="margin-top:25px;">Active Roster (<span id="activeCount">0</span>)</div>
-        <div style="margin-bottom:10px;">
-            <button onclick="parAll()" class="link-btn">PAR CHECK ALL</button>
-        </div>
-        <div id="lastPar" class="profile-bio" style="margin-bottom:10px;"></div>
-        <div id="roster"></div>
+            <div class="ab-form">
+                <input id="fUnit" placeholder="Unit (e.g. E68)" maxlength="10" autocomplete="off">
+                <input id="fPers" type="number" min="1" max="20" placeholder="#" title="Personnel">
+                <select id="fDept">
+                    <option value="">Department&hellip;</option>
+                    <option>Palm Harbor Fire Rescue</option>
+                    <option>Largo Fire Rescue</option>
+                    <option>Seminole Fire Rescue</option>
+                    <option>Pinellas Park Fire Rescue</option>
+                    <option>St. Petersburg Fire Rescue</option>
+                </select>
+                <select id="fAssign">
+                    <option value="Staging">Staging (unassigned)</option>
+                    <option>Decon</option>
+                    <option>Entry</option>
+                    <option>Medical</option>
+                    <option>Research</option>
+                    <option>Safety</option>
+                    <option>Liaison</option>
+                    <option>Equipment</option>
+                    <option>Drone</option>
+                    <option>Hazmat Branch</option>
+                </select>
+                <button id="fAdd">+ ADD</button>
+            </div>
 
-        <div class="section-header" style="margin-top:25px;">Entry / Exit Log</div>
-        <div id="log"></div>
+            <div style="padding:0 18px;">
+                <table class="ab-table">
+                    <thead><tr>
+                        <th>Unit</th><th>Pers.</th><th>Department</th><th>Assignment</th><th>Arrived</th><th></th>
+                    </tr></thead>
+                    <tbody id="abBody"></tbody>
+                </table>
+                <div class="ab-empty" id="abEmpty">No units on scene yet &mdash; add the first arriving unit above.</div>
+            </div>
 
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="resetTracker()" class="link-btn" style="background:#d92525; color:white; border:none;">RESET</button>
-            <button onclick="window.print()" class="link-btn primary">PRINT</button>
+            <div class="ab-sec">By assignment</div>
+            <div class="ab-groups" id="abGroups"></div>
+            <div class="ab-sec">By department</div>
+            <div class="ab-groups" id="abDepts"></div>
+            <div class="ab-note">Tap a row's assignment to reassign a crew live &mdash; totals update instantly. "Staging (unassigned)" crews count toward <b>Available to command</b>. The board is saved on this device.</div>
+            <button class="ab-reset" id="abReset">Reset board (new incident)</button>
         </div>
     </div>
 
@@ -94,69 +150,100 @@
             localStorage.setItem('darkMode', isDark);
             modeToggle.textContent = isDark ? '🌞' : '🌙';
         });
-        // ACCOUNTABILITY LOGIC (saved on this device)
-        const LS_KEY = 'acct_tracker_v1';
-        let state = loadState();
-        function loadState(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || {active:[], log:[]}; } catch(e){ return {active:[], log:[]}; } }
-        function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
-        function fmtTime(ts){ return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
-        function fmtDur(ms){ const m = Math.floor(ms/60000); if(m < 60) return m + 'm'; return Math.floor(m/60) + 'h ' + (m%60) + 'm'; }
+
+        // ACCOUNTABILITY BOARD (saved on this device)
+        const LS_KEY = 'acct_board_v1';
+        const ASSIGNS = ['Staging','Decon','Entry','Medical','Research','Safety','Liaison','Equipment','Drone','Hazmat Branch'];
+        const DEPTS = ['Palm Harbor Fire Rescue','Largo Fire Rescue','Seminole Fire Rescue','Pinellas Park Fire Rescue','St. Petersburg Fire Rescue'];
+        let rows = loadRows();
+
+        function loadRows(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ return []; } }
+        function saveRows(){ try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch(e){} }
+        function nowHM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
         function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
 
-        function addPerson(){
-            const nameEl = document.getElementById('pName');
-            const name = nameEl.value.trim();
-            if(!name){ nameEl.focus(); return; }
-            state.active.push({name: name, zone: document.getElementById('pZone').value, inAt: Date.now(), parAt: 0});
-            nameEl.value = '';
-            saveState(); render();
+        function tick(){
+            const d=new Date();
+            document.getElementById('abClock').textContent =
+                String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
         }
-        document.getElementById('pName').addEventListener('keydown', e => { if(e.key === 'Enter') addPerson(); });
+        setInterval(tick, 1000); tick();
 
-        function parOne(i){ state.active[i].parAt = Date.now(); saveState(); render(); }
-        function parAll(){ const now = Date.now(); state.active.forEach(p => p.parAt = now); saveState(); render(); }
-        function exitPerson(i){
-            const p = state.active.splice(i, 1)[0];
-            p.outAt = Date.now();
-            state.log.unshift(p);
-            saveState(); render();
-        }
-        function resetTracker(){ if(confirm('Clear entire roster and log?')){ state = {active:[], log:[]}; saveState(); render(); } }
+        const incEl = document.getElementById('abIncident');
+        incEl.value = localStorage.getItem('acct_board_incident') || '';
+        incEl.addEventListener('input', () => { try { localStorage.setItem('acct_board_incident', incEl.value); } catch(e){} });
 
-        const ZONE_CLS = {Hot:'z-hot', Warm:'z-warm', Cold:'z-cold', Staging:'z-staging'};
         function render(){
-            const now = Date.now();
-            document.getElementById('activeCount').textContent = state.active.length;
-            const last = state.active.reduce((m, p) => Math.max(m, p.parAt || 0), 0);
-            document.getElementById('lastPar').textContent = state.active.length ? (last ? 'Last PAR: ' + fmtTime(last) : 'No PAR recorded yet') : '';
-            const r = document.getElementById('roster');
-            r.innerHTML = state.active.length ? '' : '<div class="profile-bio">No personnel logged.</div>';
-            state.active.forEach((p, i) => {
-                const div = document.createElement('div');
-                div.className = 'roster-row';
-                div.innerHTML =
-                    '<div class="roster-main"><div class="roster-name">' + esc(p.name) + ' <span class="zone-badge ' + (ZONE_CLS[p.zone] || '') + '">' + esc(p.zone).toUpperCase() + '</span></div>' +
-                    '<div class="roster-meta">In: ' + fmtTime(p.inAt) + ' &middot; Elapsed: ' + fmtDur(now - p.inAt) +
-                    (p.parAt ? ' &middot; <span class="par-ok">PAR \u2713 ' + fmtTime(p.parAt) + '</span>' : '') + '</div></div>' +
-                    '<button class="mini-btn" onclick="parOne(' + i + ')">PAR</button>' +
-                    '<button class="mini-btn" onclick="exitPerson(' + i + ')">Out</button>';
-                r.appendChild(div);
+            const tb = document.getElementById('abBody');
+            tb.innerHTML = '';
+            document.getElementById('abEmpty').style.display = rows.length ? 'none' : 'block';
+            let scene = 0, assigned = 0;
+            const perAssign = {}, perDept = {};
+            rows.forEach((r, i) => {
+                scene += r.pers;
+                if(r.assign !== 'Staging') assigned += r.pers;
+                perAssign[r.assign] = (perAssign[r.assign] || 0) + r.pers;
+                perDept[r.dept] = (perDept[r.dept] || 0) + r.pers;
+                const tr = document.createElement('tr');
+                const sel = '<select data-i="'+i+'">' + ASSIGNS.map(a =>
+                    '<option'+(a===r.assign?' selected':'')+'>'+a+'</option>').join('') + '</select>';
+                tr.innerHTML = '<td><span class="ab-unit">'+esc(r.unit)+'</span></td>' +
+                    '<td><span class="ab-pers">'+r.pers+'</span></td>' +
+                    '<td>'+esc(r.dept)+'</td><td>'+sel+'</td>' +
+                    '<td><span class="ab-time">'+esc(r.t)+'</span></td>' +
+                    '<td><button class="ab-del" data-i="'+i+'" title="Remove">&times;</button></td>';
+                tb.appendChild(tr);
             });
-            const l = document.getElementById('log');
-            l.innerHTML = state.log.length ? '' : '<div class="profile-bio">No entries yet.</div>';
-            state.log.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'log-row';
-                div.textContent = p.name + ' [' + p.zone + '] In ' + fmtTime(p.inAt) + ' \u2192 Out ' + fmtTime(p.outAt) + ' (' + fmtDur(p.outAt - p.inAt) + ')';
-                l.appendChild(div);
+            document.getElementById('stScene').textContent = scene;
+            document.getElementById('stAssigned').textContent = assigned;
+            document.getElementById('stAvail').textContent = scene - assigned;
+
+            const g = document.getElementById('abGroups'); g.innerHTML = '';
+            ASSIGNS.forEach(a => {
+                if(perAssign[a] > 0){
+                    const c = document.createElement('div'); c.className = 'ab-chip';
+                    c.innerHTML = esc(a) + ' <b>' + perAssign[a] + '</b>'; g.appendChild(c);
+                }
+            });
+            const d = document.getElementById('abDepts'); d.innerHTML = '';
+            DEPTS.forEach(dp => {
+                if(perDept[dp] > 0){
+                    const c = document.createElement('div'); c.className = 'ab-chip dept';
+                    c.innerHTML = esc(dp) + ' <b>' + perDept[dp] + '</b>'; d.appendChild(c);
+                }
+            });
+
+            tb.querySelectorAll('select').forEach(s => {
+                s.addEventListener('change', () => { rows[+s.dataset.i].assign = s.value; saveRows(); render(); });
+            });
+            tb.querySelectorAll('.ab-del').forEach(b => {
+                b.addEventListener('click', () => { rows.splice(+b.dataset.i, 1); saveRows(); render(); });
             });
         }
+
+        document.getElementById('fAdd').addEventListener('click', () => {
+            const u = document.getElementById('fUnit').value.trim().toUpperCase();
+            const p = parseInt(document.getElementById('fPers').value, 10);
+            const d = document.getElementById('fDept').value;
+            const a = document.getElementById('fAssign').value;
+            if(!u || !p || p < 1 || !d){ alert('Enter unit, personnel count, and department.'); return; }
+            rows.push({unit:u, pers:p, dept:d, assign:a, t:nowHM()});
+            document.getElementById('fUnit').value = '';
+            document.getElementById('fPers').value = '';
+            document.getElementById('fDept').value = '';
+            saveRows(); render();
+        });
+
+        document.getElementById('abReset').addEventListener('click', () => {
+            if(confirm('Clear the board for a new incident?')){
+                rows = []; saveRows();
+                try { localStorage.removeItem('acct_board_incident'); } catch(e){}
+                incEl.value = '';
+                render();
+            }
+        });
+
         render();
-        setInterval(render, 30000);
-        // PWA REGISTER
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
-        }
     </script>
 </body>
 </html>
