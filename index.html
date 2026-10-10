@@ -255,10 +255,10 @@
                 { title: "Skydio Log In ",            url: "https://cloud.skydio.com/entry/login" },
                 { title: "Foam Calculator",           url: "Foamcalculator.html" },
                 { title: "Hazmat Board",              url: "Hazmatboard.html" },
-                { title: "Accountability Tracker",    url: "Accountability.html" },
-                { title: "ERG Lookup (Offline)",      url: "Erglookup.html" },
-                { title: "Unit Converter",          url: "UnitConverter.html" },
-                { title: "Meter Log",               url: "MeterLog.html" },
+                { title: "Accountability Tracker",    url: "Accountability.html", badge: "NEW" },
+                { title: "ERG Lookup (Offline)",      url: "Erglookup.html", badge: "NEW" },
+                { title: "Unit Converter",          url: "UnitConverter.html", badge: "NEW" },
+                { title: "Meter Log",               url: "MeterLog.html", badge: "NEW" },
                 { title: "Cameo Chemicals",           url: "https://cameochemicals.noaa.gov/" },
                 { title: "E-Plan",                    url: "https://erplan.net/eplan/home.htm" },
                 { title: "ERG (Response Guide)",      url: "https://www.phmsa.dot.gov/sites/phmsa.dot.gov/files/2024-04/ERG2024-Eng-Web-a.pdf" },
@@ -322,6 +322,12 @@
                 a.className = 'link-btn';
                 a.href = link.url;
                 a.textContent = link.title;
+                if (link.badge) {
+                    const bd = document.createElement('span');
+                    bd.className = 'new-badge';
+                    bd.textContent = link.badge;
+                    a.appendChild(bd);
+                }
                 
                 if (link.url.startsWith('http')) {
                     a.target = "_blank";
@@ -384,6 +390,33 @@
             });
         });
 
+        // WHAT'S NEW (v14) - shows once per user
+        (function(){
+            var KEY = 'wn_seen_v14';
+            try {
+                if (localStorage.getItem(KEY) === '1') return;
+                var m = document.getElementById('wnModal');
+                if (!m) return;
+                m.style.display = 'flex';
+                document.getElementById('wnOk').addEventListener('click', function(){
+                    m.style.display = 'none';
+                    try { localStorage.setItem(KEY, '1'); } catch(e){}
+                });
+            } catch(e){}
+        })();
+
     </script>
+    <div id="wnModal" class="wn-overlay" style="display:none;">
+      <div class="wn-box">
+        <div class="wn-title">What's New</div>
+        <ul class="wn-list">
+          <li><strong>Training Log</strong> &mdash; now saves to our shared Firebase database (replaces the Microsoft Form)</li>
+          <li><strong>NEW:</strong> ERG Lookup (offline), Unit Converter, Accountability Tracker, Meter Log</li>
+          <li><strong>NEW:</strong> modern website design &mdash; <a href="https://gpetrone80-lab.github.io/hazmatportalwebsite/">hazmatportalwebsite</a></li>
+        </ul>
+        <button class="link-btn primary" id="wnOk" style="width:100%;">Got it</button>
+      </div>
+    </div>
+
 </body>
 </html>
