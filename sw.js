@@ -1,5 +1,5 @@
-// Hazmat PWA - cache version v12
-const CACHE_NAME = 'hazmat-pwa-v12';
+// Hazmat PWA - cache version v13
+const CACHE_NAME = 'hazmat-pwa-v13';
 const ASSETS = [
   './',
   './index.html',
