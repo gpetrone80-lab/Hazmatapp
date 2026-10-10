@@ -1,5 +1,5 @@
-// Hazmat PWA - cache version v10
-const CACHE_NAME = 'hazmat-pwa-v10';
+// Hazmat PWA - cache version v12
+const CACHE_NAME = 'hazmat-pwa-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -12,7 +12,11 @@ const ASSETS = [
   './manifest.json',
   './Accountability.html',
   './Erglookup.html',
-  './erg-data.js'
+  './erg-data.js',
+  './UnitConverter.html',
+  './MeterLog.html',
+  './TeamInstall.html',
+  './qr-install.png'
 ];
 
 // Install: pre-cache the app shell

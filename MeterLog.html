@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meter Log</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1c92d2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hazmat App">
+    <link rel="apple-touch-icon" href="192x192.png">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="Hazmat_logo.png">
+    <style>
+        .mon-card { background:var(--btn-bg); border:var(--btn-border); border-radius:12px; padding:12px; margin-bottom:10px; }
+        .mon-name { font-weight:800; font-size:15px; }
+        .mon-meta { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+        .badge { display:inline-block; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:800; color:#fff; }
+        .b-pass { background:#1e9e50; } .b-fail { background:#d92525; } .b-none { background:#e8930c; }
+        .mini-btn { padding:8px 12px; border-radius:8px; border:1px solid var(--text-secondary); background:transparent; color:var(--text-main); font-size:12px; font-weight:700; cursor:pointer; }
+        .read-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .read-row { font-size:13px; padding:8px 4px; border-bottom:1px solid var(--text-secondary); }
+        .read-row .rt { font-weight:700; }
+        .warn { color:#d92525; font-size:13px; font-weight:700; margin-top:8px; }
+        @media print {
+            .view-controls, .no-print { display:none !important; }
+            body { background:#fff; }
+            .container { box-shadow:none; border:none; max-width:100%; }
+        }
+    </style>
+</head>
+<body data-theme="rapid">
+
+    <div class="view-controls">
+        <a href="index.html" class="icon-btn" title="Back to Dashboard">🏠</a>
+        <select id="themeSelect" class="theme-select" title="Change Design Style">
+            <option value="glass">Glass Ocean</option>
+            <option value="tactical">Tactical Ops</option>
+            <option value="minimal">Swiss Minimal</option>
+            <option value="rapid" selected>Rapid Response</option>
+        </select>
+        <button id="modeToggle" class="icon-btn" title="Toggle Dark/Light Mode">🌙</button>
+    </div>
+
+    <div class="container">
+        <div class="profile-title">Meter Log</div>
+        <div class="profile-bio">Add monitors, record calibration / bump tests, then log timestamped readings. Works offline.</div>
+
+        <div class="section-header">Monitors (<span id="monCount">0</span>)</div>
+        <div id="monitors"></div>
+
+        <div class="section-header no-print">Add Monitor</div>
+        <div class="no-print">
+        <div class="input-group">
+            <label for="mName" class="input-label">METER NAME / ASSET ID</label>
+            <input type="text" id="mName" class="std-input" placeholder="e.g., MultiRAE #1" autocomplete="off">
+        </div>
+        <div class="read-grid">
+            <div class="input-group">
+                <label for="mCalib" class="input-label">CALIBRATION DATE</label>
+                <input type="date" id="mCalib" class="std-input">
+            </div>
+            <div class="input-group">
+                <label for="mBump" class="input-label">BUMP TEST DATE</label>
+                <input type="date" id="mBump" class="std-input">
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="mBumpRes" class="input-label">BUMP TEST RESULT</label>
+            <select id="mBumpRes" class="std-input">
+                <option value="pass">Pass</option>
+                <option value="fail">Fail</option>
+            </select>
+        </div>
+        <div style="margin-top:10px;"><button onclick="addMonitor()" class="link-btn primary">Add Monitor</button></div>
+        </div>
+
+        <div class="section-header">Log Reading</div>
+        <div class="no-print">
+        <div class="input-group">
+            <label for="rMon" class="input-label">MONITOR</label>
+            <select id="rMon" class="std-input"></select>
+        </div>
+        <div class="read-grid">
+            <div class="input-group"><label class="input-label">O2 (%)</label><input type="number" id="rO2" class="std-input" step="any" placeholder="20.9"></div>
+            <div class="input-group"><label class="input-label">LEL (%)</label><input type="number" id="rLel" class="std-input" step="any" placeholder="0"></div>
+            <div class="input-group"><label class="input-label">CO (ppm)</label><input type="number" id="rCo" class="std-input" step="any" placeholder="0"></div>
+            <div class="input-group"><label class="input-label">H2S (ppm)</label><input type="number" id="rH2s" class="std-input" step="any" placeholder="0"></div>
+        </div>
+        <div class="input-group">
+            <label class="input-label">VOC / PID (ppm)</label>
+            <input type="number" id="rVoc" class="std-input" step="any" placeholder="0">
+        </div>
+        <div class="input-group">
+            <label class="input-label">NOTE</label>
+            <input type="text" id="rNote" class="std-input" placeholder="Location / conditions" autocomplete="off">
+        </div>
+        <div id="gateWarn" class="warn" style="display:none;"></div>
+        <div style="margin-top:10px;"><button onclick="addReading()" class="link-btn primary">Log Reading (now)</button></div>
+        </div>
+
+        <div class="section-header" style="margin-top:25px;">Readings</div>
+        <div id="readings"></div>
+
+        <div class="no-print" style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+            <button onclick="window.print()" class="link-btn primary">PRINT</button>
+            <button onclick="exportCSV()" class="link-btn">EXPORT CSV</button>
+            <button onclick="resetLog()" class="link-btn" style="background:#d92525; color:white; border:none;">RESET</button>
+        </div>
+    </div>
+
+    <script>
+        // THEME LOGIC
+        const body = document.body;
+        const themeSelect = document.getElementById('themeSelect');
+        const modeToggle = document.getElementById('modeToggle');
+
+        if(localStorage.getItem('theme')) { body.setAttribute('data-theme', localStorage.getItem('theme')); themeSelect.value = localStorage.getItem('theme'); }
+        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = '☀️'; }
+
+        themeSelect.addEventListener('change', (e) => { body.setAttribute('data-theme', e.target.value); localStorage.setItem('theme', e.target.value); });
+
+        modeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            modeToggle.textContent = isDark ? '☀️' : '🌙';
+        });
+
+        // METER LOG (saved on this device)
+        const LS_KEY = 'meter_log_v1';
+        let state = loadState();
+        function loadState(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || {monitors:[]}; } catch(e){ return {monitors:[]}; } }
+        function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+        function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+        function fmtDate(d){ return d || '—'; }
+        function fmtTime(ts){ return new Date(ts).toLocaleString([], {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
+        function uid(){ return 'm' + Date.now().toString(36) + Math.floor(Math.random()*999); }
+
+        function addMonitor(){
+            const name = document.getElementById('mName').value.trim();
+            if(!name){ document.getElementById('mName').focus(); return; }
+            state.monitors.push({ id: uid(), name: name,
+                calibDate: document.getElementById('mCalib').value,
+                bumpDate: document.getElementById('mBump').value,
+                bumpPass: document.getElementById('mBumpRes').value === 'pass',
+                readings: [] });
+            document.getElementById('mName').value = '';
+            document.getElementById('mCalib').value = '';
+            document.getElementById('mBump').value = '';
+            saveState(); render();
+        }
+        function delMonitor(id){
+            if(!confirm('Remove this monitor and all its readings?')) return;
+            state.monitors = state.monitors.filter(function(m){ return m.id !== id; });
+            saveState(); render();
+        }
+        function monById(id){ return state.monitors.find(function(m){ return m.id === id; }); }
+        function hasCheck(m){ return !!(m.calibDate || m.bumpDate); }
+
+        function addReading(){
+            const m = monById(document.getElementById('rMon').value);
+            const warn = document.getElementById('gateWarn');
+            if(!m){ warn.style.display = 'block'; warn.textContent = 'Add a monitor first.'; return; }
+            if(!hasCheck(m)){ warn.style.display = 'block'; warn.textContent = 'Record a calibration or bump test for "' + m.name + '" before logging readings.'; return; }
+            warn.style.display = 'none';
+            m.readings.unshift({ ts: Date.now(),
+                o2: document.getElementById('rO2').value, lel: document.getElementById('rLel').value,
+                co: document.getElementById('rCo').value, h2s: document.getElementById('rH2s').value,
+                voc: document.getElementById('rVoc').value, note: document.getElementById('rNote').value.trim() });
+            ['rO2','rLel','rCo','rH2s','rVoc','rNote'].forEach(function(id){ document.getElementById(id).value = ''; });
+            saveState(); render();
+        }
+        function delReading(mid, idx){
+            if(!confirm('Delete this reading?')) return;
+            monById(mid).readings.splice(idx, 1);
+            saveState(); render();
+        }
+        function resetLog(){
+            if(confirm('Clear all monitors and readings?')){ state = {monitors:[]}; saveState(); render(); }
+        }
+
+        function readingLine(r){
+            const parts = [];
+            if(r.o2 !== '') parts.push('O2 ' + r.o2 + '%');
+            if(r.lel !== '') parts.push('LEL ' + r.lel + '%');
+            if(r.co !== '') parts.push('CO ' + r.co + 'ppm');
+            if(r.h2s !== '') parts.push('H2S ' + r.h2s + 'ppm');
+            if(r.voc !== '') parts.push('VOC ' + r.voc + 'ppm');
+            return parts.join(' · ') || '—';
+        }
+
+        function render(){
+            document.getElementById('monCount').textContent = state.monitors.length;
+            const mc = document.getElementById('monitors');
+            mc.innerHTML = state.monitors.length ? '' : '<div class="profile-bio">No monitors yet.</div>';
+            state.monitors.forEach(function(m){
+                const div = document.createElement('div');
+                div.className = 'mon-card';
+                let badge;
+                if(!hasCheck(m)) badge = '<span class="badge b-none">NO CAL/BUMP</span>';
+                else if(m.bumpDate) badge = '<span class="badge ' + (m.bumpPass ? 'b-pass' : 'b-fail') + '">BUMP ' + (m.bumpPass ? 'PASS' : 'FAIL') + '</span>';
+                else badge = '';
+                div.innerHTML = '<div class="mon-name">' + esc(m.name) + ' ' + badge + '</div>' +
+                    '<div class="mon-meta">Calibration: ' + esc(fmtDate(m.calibDate)) + ' · Bump: ' + esc(fmtDate(m.bumpDate)) + ' · ' + m.readings.length + ' readings</div>' +
+                    '<div style="margin-top:8px;"><button class="mini-btn no-print" data-delmon="' + m.id + '">Remove</button></div>';
+                mc.appendChild(div);
+            });
+            mc.querySelectorAll('[data-delmon]').forEach(function(b){
+                b.addEventListener('click', function(){ delMonitor(b.getAttribute('data-delmon')); });
+            });
+            const sel = document.getElementById('rMon');
+            const cur = sel.value;
+            sel.innerHTML = '';
+            state.monitors.forEach(function(m){ sel.add(new Option(m.name, m.id)); });
+            if(cur && monById(cur)) sel.value = cur;
+            const rc = document.getElementById('readings');
+            rc.innerHTML = '';
+            let any = false;
+            state.monitors.forEach(function(m){
+                if(!m.readings.length) return;
+                any = true;
+                const h = document.createElement('div');
+                h.className = 'section-header';
+                h.textContent = m.name + ' (cal ' + fmtDate(m.calibDate) + ' / bump ' + fmtDate(m.bumpDate) + (m.bumpDate ? (m.bumpPass ? ' PASS' : ' FAIL') : '') + ')';
+                rc.appendChild(h);
+                m.readings.forEach(function(r, i){
+                    const div = document.createElement('div');
+                    div.className = 'read-row';
+                    div.innerHTML = '<span class="rt">' + fmtTime(r.ts) + '</span> — ' + esc(readingLine(r)) +
+                        (r.note ? '<br><span style="color:var(--text-secondary);">' + esc(r.note) + '</span>' : '');
+                    const del = document.createElement('button');
+                    del.className = 'mini-btn no-print';
+                    del.style.marginLeft = '8px';
+                    del.textContent = 'x';
+                    del.addEventListener('click', function(){ delReading(m.id, i); });
+                    div.appendChild(del);
+                    rc.appendChild(div);
+                });
+            });
+            if(!any) rc.innerHTML = '<div class="profile-bio">No readings logged yet.</div>';
+        }
+
+        function csvEsc(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+        function exportCSV(){
+            const rows = [['Monitor','Calibration date','Bump date','Bump result','Timestamp','O2 %','LEL %','CO ppm','H2S ppm','VOC ppm','Note']];
+            state.monitors.forEach(function(m){
+                const bres = m.bumpDate ? (m.bumpPass ? 'PASS' : 'FAIL') : '';
+                if(!m.readings.length) rows.push([m.name, m.calibDate, m.bumpDate, bres, '', '', '', '', '', '', '']);
+                m.readings.forEach(function(r){
+                    rows.push([m.name, m.calibDate, m.bumpDate, bres,
+                        new Date(r.ts).toLocaleString(), r.o2, r.lel, r.co, r.h2s, r.voc, r.note]);
+                });
+            });
+            const csv = rows.map(function(r){ return r.map(csvEsc).join(','); }).join('\r\n');
+            const blob = new Blob([csv], {type:'text/csv'});
+            const a = document.createElement('a');
+            const d = new Date();
+            function p2(n){ return String(n).padStart(2,'0'); }
+            a.href = URL.createObjectURL(blob);
+            a.download = 'meter-log-' + d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + '.csv';
+            document.body.appendChild(a); a.click();
+            setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        }
+        render();
+
+        // PWA REGISTER
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js'); });
+        }
+    </script>
+</body>
+</html>

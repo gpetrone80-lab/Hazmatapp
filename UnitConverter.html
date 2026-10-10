@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1c92d2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hazmat App">
+    <link rel="apple-touch-icon" href="192x192.png">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="Hazmat_logo.png">
+    <style>
+        .conv-row { display:flex; gap:10px; align-items:stretch; margin-bottom:12px; }
+        .conv-row .input-group { flex:1; margin-bottom:0; }
+        .swap-btn { flex:0 0 52px; border-radius:12px; border:1px solid var(--text-secondary); background:transparent; color:var(--text-main); font-size:20px; font-weight:800; cursor:pointer; }
+        .result-num { font-size:40px; font-weight:800; color:var(--header-color); overflow-wrap:anywhere; }
+        .cat-pills { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        .cat-pill { padding:8px 14px; border-radius:999px; border:1px solid var(--text-secondary); background:transparent; color:var(--text-main); font-size:13px; font-weight:700; cursor:pointer; }
+        .cat-pill.active { background:var(--header-color); border-color:var(--header-color); color:#fff; }
+    </style>
+</head>
+<body data-theme="rapid">
+
+    <div class="view-controls">
+        <a href="index.html" class="icon-btn" title="Back to Dashboard">🏠</a>
+        <select id="themeSelect" class="theme-select" title="Change Design Style">
+            <option value="glass">Glass Ocean</option>
+            <option value="tactical">Tactical Ops</option>
+            <option value="minimal">Swiss Minimal</option>
+            <option value="rapid" selected>Rapid Response</option>
+        </select>
+        <button id="modeToggle" class="icon-btn" title="Toggle Dark/Light Mode">🌙</button>
+    </div>
+
+    <div class="container">
+        <div class="profile-title">Unit Converter</div>
+        <div class="profile-bio">Field conversions for hazmat math. Works offline.</div>
+
+        <div class="cat-pills" id="catPills"></div>
+
+        <div class="input-group">
+            <label for="inVal" class="input-label">VALUE</label>
+            <input type="number" id="inVal" class="std-input" placeholder="Enter value" inputmode="decimal">
+        </div>
+
+        <div class="conv-row">
+            <div class="input-group">
+                <label for="fromUnit" class="input-label">FROM</label>
+                <select id="fromUnit" class="std-input"></select>
+            </div>
+            <button class="swap-btn" onclick="swapUnits()" title="Swap units">⇄</button>
+            <div class="input-group">
+                <label for="toUnit" class="input-label">TO</label>
+                <select id="toUnit" class="std-input"></select>
+            </div>
+        </div>
+
+        <div class="section-header">Result</div>
+        <div class="card-grid">
+            <div class="info-card" style="grid-column:1/-1; text-align:center;">
+                <div id="resNum" class="result-num">—</div>
+                <div id="resUnit" style="font-size:14px; font-weight:600;"></div>
+            </div>
+        </div>
+
+        <div style="margin-top:16px;">
+            <button onclick="clearAll()" class="link-btn">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        // THEME LOGIC
+        const body = document.body;
+        const themeSelect = document.getElementById('themeSelect');
+        const modeToggle = document.getElementById('modeToggle');
+
+        if(localStorage.getItem('theme')) { body.setAttribute('data-theme', localStorage.getItem('theme')); themeSelect.value = localStorage.getItem('theme'); }
+        if(localStorage.getItem('darkMode') === 'true') { body.classList.add('dark-mode'); modeToggle.textContent = '🌞'; }
+
+        themeSelect.addEventListener('change', (e) => { body.setAttribute('data-theme', e.target.value); localStorage.setItem('theme', e.target.value); });
+
+        modeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            modeToggle.textContent = isDark ? '🌞' : '🌙';
+        });
+
+        // CONVERSION DATA (factor = how many base units in one of this unit)
+        const CATS = {
+            pressure: { label: 'Pressure', base: 'psi', units: {
+                psi: 1, bar: 14.5038, kPa: 0.145038, atm: 14.6959, 'mmHg': 0.0193368 } },
+            volume: { label: 'Volume', base: 'L', units: {
+                gal: 3.78541, L: 1, mL: 0.001, 'ft\u00B3': 28.3168, 'm\u00B3': 1000 } },
+            length: { label: 'Length', base: 'm', units: {
+                ft: 0.3048, m: 1, in: 0.0254, cm: 0.01, mi: 1609.34, km: 1000 } },
+            temp: { label: 'Temperature', special: 'temp', units: {
+                '\u00B0F': 1, '\u00B0C': 1, K: 1 } }
+        };
+        let curCat = 'pressure';
+
+        const pillsEl = document.getElementById('catPills');
+        const fromEl = document.getElementById('fromUnit');
+        const toEl = document.getElementById('toUnit');
+        const inEl = document.getElementById('inVal');
+
+        Object.keys(CATS).forEach(k => {
+            const b = document.createElement('button');
+            b.className = 'cat-pill' + (k === curCat ? ' active' : '');
+            b.textContent = CATS[k].label;
+            b.onclick = () => { curCat = k; buildPills(); buildUnits(); convert(); };
+            pillsEl.appendChild(b);
+        });
+        function buildPills(){
+            Array.from(pillsEl.children).forEach((b, i) =>
+                b.classList.toggle('active', Object.keys(CATS)[i] === curCat));
+        }
+        function buildUnits(){
+            const names = Object.keys(CATS[curCat].units);
+            fromEl.innerHTML = ''; toEl.innerHTML = '';
+            names.forEach(n => {
+                fromEl.add(new Option(n, n));
+                toEl.add(new Option(n, n));
+            });
+            if(names.length > 1) toEl.selectedIndex = 1;
+        }
+        function swapUnits(){
+            const t = fromEl.selectedIndex;
+            fromEl.selectedIndex = toEl.selectedIndex;
+            toEl.selectedIndex = t;
+            convert();
+        }
+        function toBase(v, u){
+            if(CATS[curCat].special === 'temp'){
+                if(u === '\u00B0F') return (v - 32) * 5/9;
+                if(u === 'K') return v - 273.15;
+                return v;
+            }
+            return v * CATS[curCat].units[u];
+        }
+        function fromBase(v, u){
+            if(CATS[curCat].special === 'temp'){
+                if(u === '\u00B0F') return v * 9/5 + 32;
+                if(u === 'K') return v + 273.15;
+                return v;
+            }
+            return v / CATS[curCat].units[u];
+        }
+        function fmt(n){
+            if(!isFinite(n)) return '—';
+            const r = Math.abs(n) >= 1000 ? n.toFixed(2) : parseFloat(n.toPrecision(6));
+            return String(r).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+        }
+        function convert(){
+            const v = parseFloat(inEl.value);
+            const rn = document.getElementById('resNum');
+            const ru = document.getElementById('resUnit');
+            if(isNaN(v)){ rn.textContent = '—'; ru.textContent = ''; return; }
+            const out = fromBase(toBase(v, fromEl.value), toEl.value);
+            rn.textContent = fmt(out);
+            ru.textContent = toEl.value;
+        }
+        function clearAll(){ inEl.value = ''; convert(); inEl.focus(); }
+        inEl.addEventListener('input', convert);
+        fromEl.addEventListener('change', convert);
+        toEl.addEventListener('change', convert);
+        buildUnits();
+
+        // PWA REGISTER
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
+        }
+    </script>
+</body>
+</html>
